@@ -30,7 +30,7 @@
             <h1 id="studio-title">Your canvas</h1>
           </div>
           <div class="progress-summary">
-            <strong id="progress-count">0 / 120 colours</strong>
+            <strong id="progress-count">0 areas painted</strong>
             <div class="progress-track" aria-hidden="true"><span id="progress-fill"></span></div>
             <small id="progress-percent">0% complete</small>
           </div>
@@ -45,7 +45,7 @@
               </div>
               <div class="zoom-controls" role="group" aria-label="Canvas zoom">
                 <button id="zoom-out" type="button" aria-label="Zoom out">−</button>
-                <output id="zoom-output">100%</output>
+                <output id="zoom-output" aria-live="polite">100%</output>
                 <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
               </div>
             </div>
@@ -80,7 +80,7 @@
               </div>
               <button id="next-button" type="button">Next unfinished</button>
             </div>
-            <p class="palette-help">The selected colour has a dark ring. Completed colours receive a tick.</p>
+            <p class="palette-help">Click one connected area at a time. A colour receives a tick when all of its areas are painted.</p>
             <div class="selected-colour" id="selected-colour">
               <span></span>
               <div><small>Selected</small><strong>Colour 1</strong></div>
