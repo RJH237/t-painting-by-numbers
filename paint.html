@@ -1,34 +1,36 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="description" content="Paint a classic artwork online with numbered colours." />
-    <title>Paint — Painted</title>
-    <script src="device-layout.js"></script>
-    <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="mobile-canvas-pan.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="Paint a classic masterpiece online with 120 numbered colours.">
+    <meta name="theme-color" content="#f4efe5">
+    <title>Paint a masterpiece — Painted</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="device-layout.js"></script>
   </head>
   <body class="paint-page">
     <header class="site-header">
-      <a class="brand" href="index.html">
+      <a class="brand" href="index.html" aria-label="Painted home">
         <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
         <span>Painted</span>
       </a>
-      <nav class="site-nav" aria-label="Primary navigation">
-        <a href="index.html">Gallery</a>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="index.html" aria-current="page">Gallery</a>
         <a href="how.html">How to play</a>
         <a href="about.html">About</a>
       </nav>
     </header>
 
     <main>
-      <section class="studio-section">
+      <section class="studio-section" id="studio" aria-labelledby="studio-title">
         <div class="studio-heading">
-          <a class="back-button" href="index.html" aria-label="Back to gallery"><span aria-hidden="true">←</span><span class="back-label">Gallery</span></a>
+          <a class="back-button" href="index.html#gallery">
+            <span aria-hidden="true">←</span><span class="back-label">Back to collection</span>
+          </a>
           <div>
             <p class="eyebrow" id="studio-artist">Preparing artwork</p>
-            <h1 id="studio-title">Loading painting…</h1>
+            <h1 id="studio-title">Your canvas</h1>
           </div>
           <div class="progress-summary">
             <strong id="progress-count">0 areas painted</strong>
