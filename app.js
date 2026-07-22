@@ -2,7 +2,12 @@
 
 import { COLOUR_COUNT, DETAIL_EDGE, PAINTINGS, progressKey } from "./paintings.js";
 import { expandLegacyColours, findRegions } from "./regions.js";
-import { calculateBackingStore, calculateLabelFontSize, findLabelPlacement } from "./canvas-rendering.js";
+import {
+  calculateBackingStore,
+  calculateLabelFontSize,
+  calculateRequiredZoomForLabels,
+  findLabelPlacement,
+} from "./canvas-rendering.js";
 import {
   canvasAnchorFromPoint,
   clampZoom,
@@ -13,7 +18,8 @@ import {
 } from "./canvas-gestures.js";
 
 const MIN_ZOOM = 0.5;
-const MAX_ZOOM = 5;
+const DEFAULT_MAX_ZOOM = 5;
+const MAX_SAFE_ZOOM = 12;
 const ZOOM_STEP = 0.25;
 
 const $ = (selector) => document.querySelector(selector);
@@ -707,8 +713,9 @@ function updateProgress() {
 }
 
 function setZoom(value, { snap = true, anchor = null, point = null } = {}) {
+  const maximumZoom = getMaximumZoom();
   const nextValue = snap ? Math.round(value / ZOOM_STEP) * ZOOM_STEP : value;
-  const nextZoom = clampZoom(nextValue, MIN_ZOOM, MAX_ZOOM);
+  const nextZoom = clampZoom(nextValue, MIN_ZOOM, maximumZoom);
   const zoomChanged = Math.abs(nextZoom - state.zoom) > 0.001;
   state.zoom = nextZoom;
   elements.zoomOutput.value = `${Math.round(state.zoom * 100)}%`;
@@ -719,7 +726,14 @@ function setZoom(value, { snap = true, anchor = null, point = null } = {}) {
     positionCanvasAnchor(anchor, point);
   }
   elements.zoomOut.disabled = state.zoom <= MIN_ZOOM;
-  elements.zoomIn.disabled = state.zoom >= MAX_ZOOM;
+  elements.zoomIn.disabled = state.zoom >= maximumZoom;
+}
+
+function getMaximumZoom() {
+  if (!state.result) return DEFAULT_MAX_ZOOM;
+  const baseCellScale = getCanvasBaseWidth() / state.result.width;
+  const required = calculateRequiredZoomForLabels(state.result.regions, baseCellScale);
+  return Math.min(MAX_SAFE_ZOOM, Math.max(DEFAULT_MAX_ZOOM, Math.ceil(required / ZOOM_STEP) * ZOOM_STEP));
 }
 
 function captureCanvasAnchor(point) {
@@ -740,7 +754,7 @@ function handleCanvasWheel(event) {
   gesture.wheelZoom = clampZoom(
     wheelZoomTarget(currentZoom, event.deltaY, event.deltaMode),
     MIN_ZOOM,
-    MAX_ZOOM,
+    getMaximumZoom(),
   );
   gesture.pendingZoom = {
     value: gesture.wheelZoom,
@@ -856,7 +870,7 @@ function beginPinchGesture() {
 
 function queueGestureZoom(value, anchor, point) {
   gesture.pendingZoom = {
-    value: clampZoom(value, MIN_ZOOM, MAX_ZOOM),
+    value: clampZoom(value, MIN_ZOOM, getMaximumZoom()),
     anchor,
     point,
   };
