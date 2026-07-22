@@ -11,7 +11,7 @@ Painted is a browser-based painting-by-numbers gallery. Choose a classic public-
 - Interactive numbered canvas that fills only the connected area clicked
 - Optional original reference view and numbered-area hint
 - Per-area painting progress saved in browser local storage
-- Responsive layout, zoom up to 500%, and zoom-aware number labels
+- Responsive layout, zoom up to 500%, and sharp, zoom-aware number labels
 - No accounts, uploads, printing, or image downloads
 
 ## Run locally
@@ -29,16 +29,16 @@ Then visit <http://localhost:8000>. Individual canvases use URLs such as
 
 When a painting page opens, its source reproduction is resized to a 156-pixel shape grid and reduced to 120 representative colours using deterministic colour clustering. The canvas identifies each group of horizontally or vertically connected cells as a distinct paint area. Selecting a numbered swatch and clicking the same number fills only that connected area.
 
-Numbers that would be illegibly small are hidden at the fitted view and appear automatically as zoom makes their areas large enough. Zoom ranges from 50% to 500%.
+Numbers that would be illegibly small are hidden at the fitted view and appear automatically as zoom makes their areas large enough. The canvas is redrawn at every zoom level and at the screen's pixel density, so boundaries and text remain sharp rather than enlarging a fixed-resolution image. Zoom ranges from 50% to 500%.
 
 Only the list of completed connected areas is stored, using `localStorage` in the user's browser. Existing colour-level progress from earlier releases is migrated automatically. Nothing is uploaded to a server.
 
 ## Tests
 
-Run the JavaScript syntax checks and connected-region tests with:
+Run the JavaScript syntax checks and rendering/connected-region tests with:
 
 ```bash
-node --check app.js && node --check gallery.js && node --test tests/regions.test.mjs
+node --check app.js && node --check gallery.js && node --check canvas-rendering.js && node --test tests/*.test.mjs
 ```
 
 ## Artwork sources
