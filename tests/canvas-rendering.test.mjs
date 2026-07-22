@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   calculateBackingStore,
   calculateLabelFontSize,
+  calculateRequiredZoomForLabels,
   findLabelPlacement,
 } from "../canvas-rendering.js";
 
@@ -42,4 +43,18 @@ test("label placement favours the best centred clearance inside an irregular reg
   assert.equal(placement.y, 1);
   assert.equal(placement.widthCells, 1);
   assert.equal(placement.heightCells, 3);
+});
+
+test("maximum zoom makes every region label visible, including a one-cell three-digit label", () => {
+  const regions = [
+    { label: 119, cells: [0], labelPlacement: { widthCells: 1, heightCells: 1 } },
+    { label: 8, cells: [1, 2, 3, 4], labelPlacement: { widthCells: 2, heightCells: 2 } },
+  ];
+  const baseCellScale = 3;
+  const zoom = calculateRequiredZoomForLabels(regions, baseCellScale);
+
+  for (const region of regions) {
+    assert.ok(calculateLabelFontSize(region, region.labelPlacement, baseCellScale * zoom) >= 9);
+  }
+  assert.ok(zoom > 5, "the check must be capable of extending the old 500% cap");
 });
