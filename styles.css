@@ -862,6 +862,118 @@ html[data-device="phone"] .palette-swatch { min-height: 42px; font-size: .68rem;
   html[data-device="phone"] .palette-panel { max-height: 88dvh; }
 }
 
+/* v0.7 phone studio: an edge-to-edge canvas with a persistent colour wheel. */
+html[data-device="phone"] body.paint-page {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+}
+
+html[data-device="phone"] body.paint-page .site-header,
+html[data-device="phone"] .studio-heading { display: none; }
+
+html[data-device="phone"] body.paint-page main {
+  width: 100%;
+  height: var(--app-height, 100dvh);
+}
+
+html[data-device="phone"] .studio-section {
+  height: 100%;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  display: block;
+}
+
+html[data-device="phone"] .studio-shell {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 58px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+html[data-device="phone"] .canvas-panel {
+  min-width: 0;
+  height: 100%;
+  grid-template-rows: 48px minmax(0, 1fr) 42px;
+}
+
+html[data-device="phone"] .canvas-toolbar {
+  min-height: 48px;
+  padding: 3px 5px;
+}
+
+html[data-device="phone"] .tool-group button,
+html[data-device="phone"] .zoom-controls button { min-height: 40px; }
+html[data-device="phone"] .mobile-palette-toggle { display: none; }
+html[data-device="phone"] .canvas-scroll { padding: 6px; }
+
+html[data-device="phone"] .canvas-footer {
+  min-height: 42px;
+  padding: 4px 8px;
+}
+
+html[data-device="phone"] .canvas-footer p { -webkit-line-clamp: 1; }
+html[data-device="phone"] .reset-button { min-height: 34px; padding: 3px 0; }
+html[data-device="phone"] .palette-backdrop { display: none !important; }
+
+html[data-device="phone"] .palette-panel,
+html[data-device="phone"] .palette-panel.is-open {
+  position: relative;
+  inset: auto;
+  z-index: 2;
+  width: 58px;
+  height: 100%;
+  max-height: none;
+  padding: 4px 5px;
+  display: block;
+  overflow: hidden;
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  background: #fffdfa;
+  box-shadow: -4px 0 15px rgba(18, 29, 23, .08);
+  transform: none;
+  visibility: visible;
+  transition: none;
+}
+
+html[data-device="phone"] .palette-drawer-top,
+html[data-device="phone"] .palette-heading,
+html[data-device="phone"] .palette-help,
+html[data-device="phone"] .selected-colour { display: none; }
+
+html[data-device="phone"] .palette-grid {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  max-height: none;
+  padding: 4px 2px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-snap-type: y proximity;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+html[data-device="phone"] .palette-grid::-webkit-scrollbar { display: none; }
+html[data-device="phone"] .palette-swatch {
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  min-height: 42px;
+  flex: 0 0 42px;
+  aspect-ratio: 1;
+  scroll-snap-align: center;
+  font-size: .68rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
