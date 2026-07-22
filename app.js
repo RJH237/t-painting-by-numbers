@@ -1,6 +1,12 @@
 "use strict";
 
 import { COLOUR_COUNT, DETAIL_EDGE, PAINTINGS, progressKey } from "./paintings.js";
+import { expandLegacyColours, findRegions } from "./regions.js";
+
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 5;
+const ZOOM_STEP = 0.25;
+const MIN_VISIBLE_LABEL_SIZE = 7.5;
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -56,18 +62,22 @@ elements.hintButton.addEventListener("click", () => {
   setStatus(state.hint ? `Every area numbered ${state.selected + 1} is softly highlighted.` : instructionForSelection());
 });
 
-elements.zoomOut.addEventListener("click", () => setZoom(state.zoom - 0.15));
-elements.zoomIn.addEventListener("click", () => setZoom(state.zoom + 0.15));
+elements.zoomOut.addEventListener("click", () => setZoom(state.zoom - ZOOM_STEP));
+elements.zoomIn.addEventListener("click", () => setZoom(state.zoom + ZOOM_STEP));
 elements.nextButton.addEventListener("click", () => selectNextUnfinished(state.selected));
 elements.resetButton.addEventListener("click", resetPainting);
 elements.canvas.addEventListener("click", handleCanvasClick);
 elements.canvas.addEventListener("keydown", (event) => {
   if ((event.key === "Enter" || event.key === " ") && state.result && !state.reference) {
     event.preventDefault();
-    completeColour(state.selected, true);
+    completeNextRegionForColour(state.selected, true);
   }
 });
-window.addEventListener("resize", () => state.result && setZoom(state.zoom));
+window.addEventListener("resize", () => {
+  if (!state.result) return;
+  applyCanvasZoom();
+  if (!state.reference) renderCanvas();
+});
 
 const requestedPainting = new URLSearchParams(window.location.search).get("id");
 const initialPainting = Object.hasOwn(PAINTINGS, requestedPainting) ? requestedPainting : Object.keys(PAINTINGS)[0];
@@ -102,7 +112,7 @@ async function openPainting(id) {
   elements.referenceButton.setAttribute("aria-pressed", "false");
   elements.referenceButton.textContent = "Show original";
   elements.hintButton.setAttribute("aria-pressed", "false");
-  elements.progressCount.textContent = `0 / ${COLOUR_COUNT} colours`;
+  elements.progressCount.textContent = "0 areas painted";
   elements.progressFill.style.width = "0%";
   elements.progressPercent.textContent = "0% complete";
   elements.loadingCopy.textContent = "Studying the colours in the original";
@@ -123,7 +133,7 @@ async function openPainting(id) {
     elements.loadingCopy.textContent = "Drawing the numbered regions";
     await nextFrame();
     const sorted = sortPalette(quantised.colours, quantised.labels);
-    const regions = findRegions(sorted.labels, prepared.width, prepared.height);
+    const regionMap = findRegions(sorted.labels, prepared.width, prepared.height, sorted.colours.length);
 
     state.result = {
       width: prepared.width,
@@ -131,16 +141,22 @@ async function openPainting(id) {
       originalPixels: prepared.pixels,
       labels: sorted.labels,
       colours: sorted.colours,
-      regions,
+      ...regionMap,
     };
-    state.filled = loadProgress(id, sorted.colours.length);
+    state.filled = loadProgress(id, state.result);
+    saveProgress();
     state.selected = firstUnfinished(0);
     elements.loadingState.hidden = true;
     elements.canvasScroll.hidden = false;
     renderPalette();
     renderCanvas();
     updateProgress();
-    setStatus(instructionForSelection());
+    setStatus(
+      state.filled.size === state.result.regions.length
+        ? "Masterpiece complete — every connected area is painted."
+        : instructionForSelection(),
+      state.filled.size === state.result.regions.length ? "success" : "neutral",
+    );
     requestAnimationFrame(() => setZoom(1));
   } catch (error) {
     console.error(error);
@@ -379,68 +395,9 @@ function sortPalette(colours, labels) {
   return { colours: order.map((item) => item.colour), labels: nextLabels };
 }
 
-function findRegions(labels, width, height) {
-  const visited = new Uint8Array(labels.length);
-  const queue = new Int32Array(labels.length);
-  const regions = [];
-
-  for (let start = 0; start < labels.length; start += 1) {
-    if (visited[start]) continue;
-    const label = labels[start];
-    let head = 0;
-    let tail = 0;
-    let sumX = 0;
-    let sumY = 0;
-    const cells = [];
-    queue[tail++] = start;
-    visited[start] = 1;
-
-    while (head < tail) {
-      const index = queue[head++];
-      cells.push(index);
-      const x = index % width;
-      const y = Math.floor(index / width);
-      sumX += x;
-      sumY += y;
-      if (x > 0) visit(index - 1);
-      if (x < width - 1) visit(index + 1);
-      if (y > 0) visit(index - width);
-      if (y < height - 1) visit(index + width);
-    }
-
-    const centreX = sumX / cells.length;
-    const centreY = sumY / cells.length;
-    let anchor = cells[0];
-    let distance = Infinity;
-    for (const index of cells) {
-      const x = index % width;
-      const y = Math.floor(index / width);
-      const nextDistance = (x - centreX) ** 2 + (y - centreY) ** 2;
-      if (nextDistance < distance) {
-        distance = nextDistance;
-        anchor = index;
-      }
-    }
-    regions.push({
-      label,
-      cells,
-      anchorX: anchor % width,
-      anchorY: Math.floor(anchor / width),
-    });
-
-    function visit(index) {
-      if (!visited[index] && labels[index] === label) {
-        visited[index] = 1;
-        queue[tail++] = index;
-      }
-    }
-  }
-  return regions;
-}
-
 function renderCanvas() {
   if (!state.result) return;
-  const { width, height, labels, colours, originalPixels, regions } = state.result;
+  const { width, height, labels, colours, originalPixels, regions, regionByPixel } = state.result;
   const longEdge = 1500;
   const scale = longEdge / Math.max(width, height);
   const canvas = elements.canvas;
@@ -461,7 +418,7 @@ function renderCanvas() {
     if (state.reference) {
       const source = pixel * 3;
       colour = [originalPixels[source], originalPixels[source + 1], originalPixels[source + 2]];
-    } else if (state.filled.has(labels[pixel])) {
+    } else if (state.filled.has(regionByPixel[pixel])) {
       colour = colours[labels[pixel]];
     } else if (state.hint && labels[pixel] === state.selected) {
       colour = [255, 244, 203];
@@ -480,12 +437,12 @@ function renderCanvas() {
 
   if (!state.reference) {
     drawBoundaries(context, labels, width, height, scale);
-    drawNumbers(context, regions, scale, width, height);
+    drawNumbers(context, regions, scale);
   }
   context.strokeStyle = "rgba(29,40,33,.72)";
   context.lineWidth = Math.max(2, scale * 0.15);
   context.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
-  setZoom(state.zoom);
+  applyCanvasZoom();
 }
 
 function drawBoundaries(context, labels, width, height, scale) {
@@ -510,21 +467,27 @@ function drawBoundaries(context, labels, width, height, scale) {
   context.stroke();
 }
 
-function drawNumbers(context, regions, scale, width, height) {
-  const minimumArea = Math.max(9, Math.round((width * height) / 3200));
+function drawNumbers(context, regions, scale) {
+  const displayScale = (getCanvasBaseWidth() * state.zoom) / elements.canvas.width;
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.lineJoin = "round";
 
   for (const region of regions) {
-    if (state.filled.has(region.label) || region.cells.length < minimumArea) continue;
+    if (state.filled.has(region.id)) continue;
     const number = String(region.label + 1);
-    const fontSize = Math.max(7.5, Math.min(16, Math.sqrt(region.cells.length) * scale * 0.32));
+    const regionWidth = (region.maxX - region.minX + 1) * scale;
+    const regionHeight = (region.maxY - region.minY + 1) * scale;
+    const idealSize = Math.max(7, Math.min(22, Math.sqrt(region.cells.length) * scale * 0.32));
+    const horizontalFit = regionWidth / (number.length * 0.64);
+    const verticalFit = regionHeight * 0.74;
+    const fontSize = Math.max(1, Math.min(idealSize, horizontalFit, verticalFit));
+    if (fontSize * displayScale < MIN_VISIBLE_LABEL_SIZE) continue;
     const x = (region.anchorX + 0.5) * scale;
     const y = (region.anchorY + 0.5) * scale;
     context.font = `700 ${fontSize}px ui-sans-serif, system-ui, sans-serif`;
     context.strokeStyle = "rgba(255,254,249,.96)";
-    context.lineWidth = Math.max(2.2, fontSize * 0.3);
+    context.lineWidth = Math.max(1.2, fontSize * 0.3);
     context.strokeText(number, x, y);
     context.fillStyle = region.label === state.selected ? "#a54f36" : "rgba(42,49,44,.82)";
     context.fillText(number, x, y);
@@ -560,7 +523,7 @@ function selectColour(index) {
   elements.hintButton.setAttribute("aria-pressed", "false");
   refreshPalette();
   if (!state.reference) renderCanvas();
-  setStatus(state.filled.has(index) ? `Colour ${index + 1} is already complete. Choose an unfinished colour.` : instructionForSelection());
+  setStatus(isColourComplete(index) ? `Colour ${index + 1} is already complete. Choose an unfinished colour.` : instructionForSelection());
 }
 
 function refreshPalette() {
@@ -568,7 +531,7 @@ function refreshPalette() {
   $$(".palette-swatch").forEach((button) => {
     const index = Number(button.dataset.colour);
     button.classList.toggle("is-selected", index === state.selected);
-    button.classList.toggle("is-complete", state.filled.has(index));
+    button.classList.toggle("is-complete", isColourComplete(index));
     button.setAttribute("aria-pressed", String(index === state.selected));
   });
   const colour = state.result.colours[state.selected];
@@ -581,7 +544,9 @@ function handleCanvasClick(event) {
   const rectangle = elements.canvas.getBoundingClientRect();
   const x = Math.min(state.result.width - 1, Math.max(0, Math.floor(((event.clientX - rectangle.left) / rectangle.width) * state.result.width)));
   const y = Math.min(state.result.height - 1, Math.max(0, Math.floor(((event.clientY - rectangle.top) / rectangle.height) * state.result.height)));
-  const clicked = state.result.labels[y * state.result.width + x];
+  const pixel = y * state.result.width + x;
+  const clicked = state.result.labels[pixel];
+  const regionId = state.result.regionByPixel[pixel];
 
   if (clicked !== state.selected) {
     elements.canvas.classList.remove("is-wrong");
@@ -591,37 +556,52 @@ function handleCanvasClick(event) {
     setStatus(`That area is number ${clicked + 1}; you have number ${state.selected + 1} selected.`, "error");
     return;
   }
-  completeColour(clicked, false);
+  completeRegion(regionId, false);
 }
 
-function completeColour(index, keyboardShortcut) {
-  if (state.filled.has(index)) {
-    setStatus(`Colour ${index + 1} is already complete.`);
+function completeRegion(regionId, keyboardShortcut) {
+  const region = state.result.regions[regionId];
+  if (state.filled.has(regionId)) {
+    setStatus(`This number ${region.label + 1} area is already painted.`);
     return;
   }
 
-  state.filled.add(index);
+  state.filled.add(regionId);
   state.hint = false;
   elements.hintButton.setAttribute("aria-pressed", "false");
   saveProgress();
-  const completedNumber = index + 1;
-  state.selected = firstUnfinished(index + 1);
+  const completedNumber = region.label + 1;
+  const remainingForColour = unfinishedRegionsForColour(region.label).length;
+  if (!remainingForColour) state.selected = firstUnfinished(region.label + 1);
   refreshPalette();
   renderCanvas();
   updateProgress();
 
-  if (state.filled.size === state.result.colours.length) {
-    setStatus(`Masterpiece complete — all ${state.result.colours.length} colours are in place.`, "success");
+  if (state.filled.size === state.result.regions.length) {
+    setStatus(`Masterpiece complete — all ${state.result.regions.length} connected areas are painted.`, "success");
+  } else if (remainingForColour) {
+    const shortcutCopy = keyboardShortcut ? " using the keyboard" : "";
+    const areaCopy = remainingForColour === 1 ? "area remains" : "areas remain";
+    setStatus(`One number ${completedNumber} area painted${shortcutCopy}. ${remainingForColour} matching ${areaCopy}.`, "success");
   } else {
     const shortcutCopy = keyboardShortcut ? " using the keyboard" : "";
     setStatus(`Colour ${completedNumber} complete${shortcutCopy}. Colour ${state.selected + 1} is selected next.`, "success");
   }
 }
 
+function completeNextRegionForColour(colour, keyboardShortcut) {
+  const [regionId] = unfinishedRegionsForColour(colour);
+  if (regionId === undefined) {
+    setStatus(`Colour ${colour + 1} is already complete. Choose an unfinished colour.`);
+    return;
+  }
+  completeRegion(regionId, keyboardShortcut);
+}
+
 function selectNextUnfinished(after) {
   if (!state.result) return;
-  if (state.filled.size === state.result.colours.length) {
-    setStatus("Every colour is complete — your masterpiece is finished.", "success");
+  if (state.filled.size === state.result.regions.length) {
+    setStatus("Every connected area is complete — your masterpiece is finished.", "success");
     return;
   }
   state.selected = firstUnfinished(after + 1);
@@ -637,34 +617,51 @@ function firstUnfinished(start) {
   const total = state.result.colours.length;
   for (let offset = 0; offset < total; offset += 1) {
     const index = (start + offset) % total;
-    if (!state.filled.has(index)) return index;
+    if (!isColourComplete(index)) return index;
   }
   return Math.min(state.selected, total - 1);
 }
 
+function unfinishedRegionsForColour(colour) {
+  if (!state.result) return [];
+  return state.result.regionsByLabel[colour].filter((regionId) => !state.filled.has(regionId));
+}
+
+function isColourComplete(colour) {
+  return state.result ? unfinishedRegionsForColour(colour).length === 0 : false;
+}
+
 function updateProgress() {
   if (!state.result) return;
-  const total = state.result.colours.length;
+  const total = state.result.regions.length;
   const completed = state.filled.size;
   const percent = Math.round((completed / total) * 100);
-  elements.progressCount.textContent = `${completed} / ${total} colours`;
+  elements.progressCount.textContent = `${completed} / ${total} areas`;
   elements.progressFill.style.width = `${percent}%`;
   elements.progressPercent.textContent = `${percent}% complete`;
 }
 
 function setZoom(value) {
-  state.zoom = Math.max(0.55, Math.min(1.75, Math.round(value * 20) / 20));
+  state.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.round(value / ZOOM_STEP) * ZOOM_STEP));
   elements.zoomOutput.value = `${Math.round(state.zoom * 100)}%`;
   if (state.result && !elements.canvasScroll.hidden) {
-    const availableWidth = Math.max(230, elements.canvasScroll.clientWidth - 76);
-    const availableHeight = Math.max(300, elements.canvasScroll.clientHeight - 76);
-    const ratio = elements.canvas.width / elements.canvas.height;
-    const baseWidth = Math.min(availableWidth, availableHeight * ratio, elements.canvas.width);
-    elements.canvas.style.width = `${Math.max(180, baseWidth * state.zoom)}px`;
-    elements.canvas.style.height = "auto";
+    renderCanvas();
   }
-  elements.zoomOut.disabled = state.zoom <= 0.55;
-  elements.zoomIn.disabled = state.zoom >= 1.75;
+  elements.zoomOut.disabled = state.zoom <= MIN_ZOOM;
+  elements.zoomIn.disabled = state.zoom >= MAX_ZOOM;
+}
+
+function getCanvasBaseWidth() {
+  const availableWidth = Math.max(230, elements.canvasScroll.clientWidth - 76);
+  const availableHeight = Math.max(300, elements.canvasScroll.clientHeight - 76);
+  const ratio = elements.canvas.width / elements.canvas.height;
+  return Math.min(availableWidth, availableHeight * ratio, elements.canvas.width);
+}
+
+function applyCanvasZoom() {
+  if (!state.result || elements.canvasScroll.hidden) return;
+  elements.canvas.style.width = `${Math.max(180, getCanvasBaseWidth() * state.zoom)}px`;
+  elements.canvas.style.height = "auto";
 }
 
 function resetPainting() {
@@ -685,11 +682,18 @@ function resetPainting() {
   setStatus("The canvas has been reset. Colour 1 is ready.");
 }
 
-function loadProgress(id, total) {
+function loadProgress(id, result) {
   try {
     const stored = JSON.parse(localStorage.getItem(progressKey(id)) || "null");
-    if (!stored || !Array.isArray(stored.filled) || stored.total !== total) return new Set();
-    return new Set(stored.filled.filter((value) => Number.isInteger(value) && value >= 0 && value < total));
+    if (!stored) return new Set();
+    if (stored.version === 2 && Array.isArray(stored.filledRegions) && stored.totalRegions === result.regions.length) {
+      return new Set(stored.filledRegions.filter((value) => Number.isInteger(value) && value >= 0 && value < result.regions.length));
+    }
+    if (Array.isArray(stored.filled) && stored.total === result.colours.length) {
+      const legacyColours = stored.filled.filter((value) => Number.isInteger(value) && value >= 0 && value < result.colours.length);
+      return expandLegacyColours(legacyColours, result.regions);
+    }
+    return new Set();
   } catch {
     return new Set();
   }
@@ -699,8 +703,9 @@ function saveProgress() {
   if (!state.paintingId || !state.result) return;
   try {
     localStorage.setItem(progressKey(state.paintingId), JSON.stringify({
-      total: state.result.colours.length,
-      filled: [...state.filled].sort((a, b) => a - b),
+      version: 2,
+      totalRegions: state.result.regions.length,
+      filledRegions: [...state.filled].sort((a, b) => a - b),
     }));
   } catch {
     setStatus("Progress could not be saved in this browser, but you can keep painting.", "error");
@@ -708,7 +713,9 @@ function saveProgress() {
 }
 
 function instructionForSelection() {
-  return `Colour ${state.selected + 1} is selected. Find and click a matching number on the canvas.`;
+  const remaining = unfinishedRegionsForColour(state.selected).length;
+  const areaCopy = remaining === 1 ? "area" : "areas";
+  return `Colour ${state.selected + 1} is selected. Find and click one of ${remaining} matching ${areaCopy}.`;
 }
 
 function setStatus(message, tone = "neutral") {
