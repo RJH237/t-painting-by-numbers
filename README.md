@@ -11,7 +11,8 @@ Painted is a browser-based painting-by-numbers gallery. Choose a classic public-
 - Interactive numbered canvas that fills only the connected area clicked
 - Optional original reference view and numbered-area hint
 - Per-area painting progress saved in browser local storage
-- Responsive layout, zoom up to 500%, and sharp, zoom-aware number labels
+- Automatic desktop/phone layout detection, with a canvas-first mobile workspace and bottom-sheet paintbox
+- Touch-sized phone controls, orientation-safe sizing, zoom up to 500%, and sharp, zoom-aware number labels
 - No accounts, uploads, printing, or image downloads
 
 ## Run locally
@@ -38,7 +39,7 @@ Only the list of completed connected areas is stored, using `localStorage` in th
 Run the JavaScript syntax checks and rendering/connected-region tests with:
 
 ```bash
-node --check app.js && node --check gallery.js && node --check canvas-rendering.js && node --test tests/*.test.mjs
+node --check app.js && node --check gallery.js && node --check canvas-rendering.js && node --check device-layout.js && node --test tests/*.test.mjs
 ```
 
 ## Artwork sources
