@@ -2,6 +2,25 @@
 
 All notable changes to Painted are recorded here.
 
+## 0.8.0 — 2026-07-22
+
+### Fixed
+
+- Allow an enlarged painting to be dragged left, right, up and down on phones
+- Preserve redraw-based pinch zoom so the painting boundaries and number labels increase in size together
+- Keep `device-layout.js` loaded as an ES module; the failed 0.7.1 attempt loaded it as a classic script, causing its `export` syntax to fail and preventing phone gesture mode from being installed
+
+### Changed
+
+- Use a mobile-only block scroll viewport rather than the flex layout that could make vertical overflow unreachable on iOS
+- Keep the existing canvas rendering engine, adaptive maximum zoom and full-screen phone studio unchanged
+
+### Added
+
+- Regression checks requiring the phone layout detector to remain module-loaded
+- Regression checks for pinch-triggered canvas redraws, horizontal and vertical panning, and independent two-axis overflow
+- A label-scaling test requiring visible number text to grow as canvas zoom increases
+
 ## 0.7.0 — 2026-07-22
 
 ### Changed
