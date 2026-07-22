@@ -31,23 +31,13 @@ Then visit <http://localhost:8000>. Individual canvases use URLs such as
 
 When a painting page opens, its source reproduction is resized to a 156-pixel shape grid and reduced to 120 representative colours using deterministic colour clustering. The canvas identifies each group of horizontally or vertically connected cells as a distinct paint area. Selecting a numbered swatch and clicking the same number fills only that connected area.
 
-Numbers that would be illegibly small are hidden at the fitted view and appear automatically as zoom makes their areas large enough. The canvas is redrawn at every zoom level and at the screen's pixel density, so boundaries and text remain sharp rather than enlarging a fixed-resolution image. Maximum zoom adapts to the smallest numbered area, up to a safe 1200% ceiling. On desktop, scrolling over the painting zooms around the pointer. On phones, pinching zooms around the midpoint of the gesture and one-finger dragging pans the enlarged painting horizontally and vertically.
+Numbers that would be illegibly small are hidden at the fitted view and appear automatically as zoom makes their areas large enough. The canvas is redrawn at every zoom level and at the screen's pixel density, so boundaries and text remain sharp rather than enlarging a fixed-resolution image. Maximum zoom adapts to the smallest numbered area, up to a safe 1200% ceiling. On desktop, scrolling over the painting zooms around the pointer. On phones, pinching zooms around the midpoint of the gesture and one-finger dragging pans the enlarged painting.
 
 Only the list of completed connected areas is stored, using `localStorage` in the user's browser. Existing colour-level progress from earlier releases is migrated automatically. Nothing is uploaded to a server.
 
-## Permanent mobile interaction checks
-
-Every future version must preserve all of the following behaviours:
-
-- Pinching anywhere on the painting zooms in and out around the gesture midpoint.
-- After zooming, one-finger dragging can move the painting left, right, up, and down.
-- Every reachable part of an enlarged painting remains accessible on both scroll axes.
-- Mobile canvas CSS continues to use independent horizontal and vertical overflow and does not reintroduce flexbox overflow clipping.
-- The automated mobile canvas regression test remains part of the full test run.
-
 ## Tests
 
-Run the JavaScript syntax checks and rendering/connected-region/mobile-interaction tests with:
+Run the JavaScript syntax checks and rendering/connected-region tests with:
 
 ```bash
 node --check app.js && node --check gallery.js && node --check canvas-rendering.js && node --check canvas-gestures.js && node --check device-layout.js && node --test tests/*.test.mjs
