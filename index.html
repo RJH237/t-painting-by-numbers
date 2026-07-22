@@ -3,23 +3,22 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta
-      name="description"
-      content="Paint classic masterpieces online, one numbered colour at a time."
-    >
+    <meta name="description" content="Choose a classic masterpiece and paint it online, one numbered colour at a time.">
     <meta name="theme-color" content="#f4efe5">
     <title>Painted — Classic paintings, colour by colour</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="#top" aria-label="Painted home">
-        <span class="brand-mark" aria-hidden="true">
-          <span></span><span></span><span></span>
-        </span>
+      <a class="brand" href="index.html" aria-label="Painted home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
         <span>Painted</span>
       </a>
-      <p class="header-note">100+ colours in every masterpiece</p>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="index.html" aria-current="page">Gallery</a>
+        <a href="how.html">How to play</a>
+        <a href="about.html">About</a>
+      </nav>
     </header>
 
     <main id="top">
@@ -40,192 +39,28 @@
             <p class="eyebrow">The collection</p>
             <h2 id="gallery-title">Choose your canvas</h2>
           </div>
-          <p>Four public-domain works, each remixed into at least 100 numbered colours.</p>
+          <p>Four public-domain works, each remixed into 120 numbered colours. Every painting now opens on its own page.</p>
         </div>
-
-        <div class="painting-grid" id="painting-grid">
-          <article class="painting-card" data-painting="starry-night">
-            <div class="painting-image-wrap">
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/960px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg"
-                alt="The Starry Night by Vincent van Gogh"
-              >
-              <span class="difficulty">Intricate</span>
-            </div>
-            <div class="painting-card-copy">
-              <p>Vincent van Gogh · 1889</p>
-              <h3>The Starry Night</h3>
-              <div class="card-progress" aria-label="No progress yet">
-                <span><i></i></span><strong>Not started</strong>
-              </div>
-              <button class="start-button" type="button" data-start="starry-night">
-                Start painting <span aria-hidden="true">→</span>
-              </button>
-            </div>
-          </article>
-
-          <article class="painting-card" data-painting="great-wave">
-            <div class="painting-image-wrap">
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/The_Great_Wave_off_Kanagawa.jpg/960px-The_Great_Wave_off_Kanagawa.jpg"
-                alt="The Great Wave off Kanagawa after Katsushika Hokusai"
-              >
-              <span class="difficulty">Detailed</span>
-            </div>
-            <div class="painting-card-copy">
-              <p>After Katsushika Hokusai · c. 1830</p>
-              <h3>The Great Wave</h3>
-              <div class="card-progress" aria-label="No progress yet">
-                <span><i></i></span><strong>Not started</strong>
-              </div>
-              <button class="start-button" type="button" data-start="great-wave">
-                Start painting <span aria-hidden="true">→</span>
-              </button>
-            </div>
-          </article>
-
-          <article class="painting-card" data-painting="pearl-earring">
-            <div class="painting-image-wrap portrait">
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Girl_with_a_Pearl_Earring.jpg/960px-Girl_with_a_Pearl_Earring.jpg"
-                alt="Girl with a Pearl Earring by Johannes Vermeer"
-              >
-              <span class="difficulty">Layered</span>
-            </div>
-            <div class="painting-card-copy">
-              <p>Johannes Vermeer · c. 1665</p>
-              <h3>Girl with a Pearl Earring</h3>
-              <div class="card-progress" aria-label="No progress yet">
-                <span><i></i></span><strong>Not started</strong>
-              </div>
-              <button class="start-button" type="button" data-start="pearl-earring">
-                Start painting <span aria-hidden="true">→</span>
-              </button>
-            </div>
-          </article>
-
-          <article class="painting-card" data-painting="mona-lisa">
-            <div class="painting-image-wrap portrait">
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/960px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg"
-                alt="Mona Lisa by Leonardo da Vinci"
-              >
-              <span class="difficulty">Subtle</span>
-            </div>
-            <div class="painting-card-copy">
-              <p>Leonardo da Vinci · c. 1503–1506</p>
-              <h3>Mona Lisa</h3>
-              <div class="card-progress" aria-label="No progress yet">
-                <span><i></i></span><strong>Not started</strong>
-              </div>
-              <button class="start-button" type="button" data-start="mona-lisa">
-                Start painting <span aria-hidden="true">→</span>
-              </button>
-            </div>
-          </article>
-        </div>
+        <div class="painting-grid" id="painting-grid"></div>
+        <noscript><p class="notice">Painted needs JavaScript enabled to prepare the numbered canvases.</p></noscript>
       </section>
 
-      <section class="studio-section" id="studio" hidden aria-labelledby="studio-title">
-        <div class="studio-heading">
-          <button class="back-button" id="back-button" type="button">← Back to collection</button>
-          <div>
-            <p class="eyebrow" id="studio-artist">Vincent van Gogh · 1889</p>
-            <h2 id="studio-title">The Starry Night</h2>
-          </div>
-          <div class="progress-summary">
-            <strong id="progress-count">0 / 120 colours</strong>
-            <div class="progress-track" aria-hidden="true"><span id="progress-fill"></span></div>
-            <small id="progress-percent">0% complete</small>
-          </div>
-        </div>
-
-        <div class="studio-shell">
-          <section class="canvas-panel" aria-label="Interactive painting canvas">
-            <div class="canvas-toolbar">
-              <div class="tool-group">
-                <button id="reference-button" type="button" aria-pressed="false">Show original</button>
-                <button id="hint-button" type="button" aria-pressed="false">Highlight number</button>
-              </div>
-              <div class="zoom-controls" role="group" aria-label="Canvas zoom">
-                <button id="zoom-out" type="button" aria-label="Zoom out">−</button>
-                <output id="zoom-output">100%</output>
-                <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
-              </div>
-            </div>
-
-            <div class="canvas-stage" id="canvas-stage">
-              <div class="loading-state" id="loading-state">
-                <div class="spinner" aria-hidden="true"></div>
-                <strong>Preparing your canvas…</strong>
-                <span id="loading-copy">Studying the colours in the original</span>
-              </div>
-              <div class="canvas-scroll" id="canvas-scroll" hidden>
-                <canvas
-                  id="paint-canvas"
-                  tabindex="0"
-                  role="img"
-                  aria-label="Interactive numbered painting. Select a colour and click a matching numbered area."
-                ></canvas>
-              </div>
-            </div>
-
-            <div class="canvas-footer">
-              <p id="paint-status" role="status" aria-live="polite">
-                Select a numbered colour, then click the same number on the canvas.
-              </p>
-              <button class="reset-button" id="reset-button" type="button">Reset painting</button>
-            </div>
-          </section>
-
-          <aside class="palette-panel" aria-labelledby="palette-title">
-            <div class="palette-heading">
-              <div>
-                <p class="eyebrow">Your paintbox</p>
-                <h3 id="palette-title">Choose a colour</h3>
-              </div>
-              <button id="next-button" type="button">Next unfinished</button>
-            </div>
-            <p class="palette-help">The selected colour has a dark ring. Completed colours receive a tick.</p>
-            <div class="selected-colour" id="selected-colour">
-              <span></span>
-              <div><small>Selected</small><strong>Colour 1</strong></div>
-            </div>
-            <div class="palette-grid" id="palette-grid" aria-label="Numbered colour palette"></div>
-          </aside>
-        </div>
-      </section>
-
-      <section class="how-it-works" aria-labelledby="how-title">
-        <p class="eyebrow">Take it one colour at a time</p>
-        <h2 id="how-title">How to paint</h2>
-        <ol>
-          <li><span>1</span><strong>Choose</strong><p>Pick a masterpiece from the collection.</p></li>
-          <li><span>2</span><strong>Match</strong><p>Select a numbered colour and find it on the canvas.</p></li>
-          <li><span>3</span><strong>Return</strong><p>Your progress stays in this browser until you come back.</p></li>
-        </ol>
-      </section>
-
-      <section class="credits" aria-labelledby="credits-title">
-        <h2 id="credits-title">Artwork credits</h2>
-        <p>
-          Source reproductions are public-domain works provided by Wikimedia Commons:
-          <a href="https://commons.wikimedia.org/wiki/File:Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg">The Starry Night</a>,
-          <a href="https://commons.wikimedia.org/wiki/File:The_Great_Wave_off_Kanagawa.jpg">The Great Wave</a>,
-          <a href="https://commons.wikimedia.org/wiki/File:Girl_with_a_Pearl_Earring.jpg">Girl with a Pearl Earring</a>, and
-          <a href="https://commons.wikimedia.org/wiki/File:Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg">Mona Lisa</a>.
-        </p>
-      </section>
+      <aside class="home-callout" aria-label="How Painted works">
+        <p class="eyebrow">New here?</p>
+        <h2>Colour at your own pace.</h2>
+        <p>Select a number, find its matching regions, and return whenever you like—your progress stays in this browser.</p>
+        <a class="text-link" href="how.html">See how to play <span aria-hidden="true">→</span></a>
+      </aside>
     </main>
 
     <footer>
-      <a class="brand footer-brand" href="#top">
+      <a class="brand footer-brand" href="index.html">
         <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
         <span>Painted</span>
       </a>
       <p>Made for slow afternoons with the masters.</p>
     </footer>
 
-    <script src="app.js"></script>
+    <script type="module" src="gallery.js"></script>
   </body>
 </html>

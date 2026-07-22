@@ -2,6 +2,20 @@
 
 All notable changes to Painted are recorded here.
 
+## 0.3.0 — 2026-07-22
+
+### Changed
+
+- Split the single-page app into separate Gallery, painting, How to play, and About pages
+- Gave every artwork a shareable URL using `paint.html?id=…`
+- Moved artwork data into one shared module so the gallery and painting pages stay consistent
+
+### Added
+
+- Site-wide navigation and dedicated page layouts
+- A detailed five-step playing guide and a standalone project, privacy, and artwork-credits page
+- Gallery links that preserve existing per-painting browser progress without changing storage keys
+
 ## 0.2.1 — 2026-07-22
 
 ### Improved

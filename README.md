@@ -5,6 +5,7 @@ Painted is a browser-based painting-by-numbers gallery. Choose a classic public-
 ## Features
 
 - Four classic paintings: *The Starry Night*, *The Great Wave*, *Girl with a Pearl Earring*, and *Mona Lisa*
+- Separate Gallery, painting, How to play, and About pages with shareable painting URLs
 - A deterministic 120-colour palette for every painting
 - Interactive numbered canvas with correct-colour matching
 - Optional original reference view and numbered-area hint
@@ -20,11 +21,12 @@ No build step or dependencies are required. Serve the folder locally so the remo
 python3 -m http.server 8000
 ```
 
-Then visit <http://localhost:8000>.
+Then visit <http://localhost:8000>. Individual canvases use URLs such as
+`paint.html?id=starry-night` while sharing the same painting engine.
 
 ## How it works
 
-When a painting is selected, its source reproduction is resized to a 156-pixel shape grid and reduced to 120 representative colours using deterministic colour clustering. The canvas renders numbered boundaries over unfinished colours. Selecting a numbered swatch and clicking the same number fills every area belonging to that colour.
+When a painting page opens, its source reproduction is resized to a 156-pixel shape grid and reduced to 120 representative colours using deterministic colour clustering. The canvas renders numbered boundaries over unfinished colours. Selecting a numbered swatch and clicking the same number fills every area belonging to that colour.
 
 Only the list of completed colour numbers is stored, using `localStorage` in the user's browser. Nothing is uploaded to a server.
 

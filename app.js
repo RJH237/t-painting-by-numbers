@@ -1,45 +1,13 @@
 "use strict";
 
-const COLOUR_COUNT = 120;
-const DETAIL_EDGE = 156;
-const STORAGE_PREFIX = "painted-masterpiece-v2-";
-
-const PAINTINGS = {
-  "starry-night": {
-    title: "The Starry Night",
-    artist: "Vincent van Gogh",
-    year: "1889",
-    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/960px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg",
-  },
-  "great-wave": {
-    title: "The Great Wave",
-    artist: "After Katsushika Hokusai",
-    year: "c. 1830",
-    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/The_Great_Wave_off_Kanagawa.jpg/960px-The_Great_Wave_off_Kanagawa.jpg",
-  },
-  "pearl-earring": {
-    title: "Girl with a Pearl Earring",
-    artist: "Johannes Vermeer",
-    year: "c. 1665",
-    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Girl_with_a_Pearl_Earring.jpg/960px-Girl_with_a_Pearl_Earring.jpg",
-  },
-  "mona-lisa": {
-    title: "Mona Lisa",
-    artist: "Leonardo da Vinci",
-    year: "c. 1503–1506",
-    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/960px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg",
-  },
-};
+import { COLOUR_COUNT, DETAIL_EDGE, PAINTINGS, progressKey } from "./paintings.js";
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
 const elements = {
-  gallery: $("#gallery"),
-  studio: $("#studio"),
   studioArtist: $("#studio-artist"),
   studioTitle: $("#studio-title"),
-  backButton: $("#back-button"),
   loadingState: $("#loading-state"),
   loadingCopy: $("#loading-copy"),
   canvasStage: $("#canvas-stage"),
@@ -71,16 +39,6 @@ const state = {
   loadToken: 0,
 };
 
-$$('[data-start]').forEach((button) => {
-  button.addEventListener("click", () => openPainting(button.dataset.start));
-});
-
-elements.backButton.addEventListener("click", () => {
-  state.loadToken += 1;
-  elements.studio.hidden = true;
-  elements.gallery.scrollIntoView({ behavior: "smooth", block: "start" });
-});
-
 elements.referenceButton.addEventListener("click", () => {
   if (!state.result) return;
   state.reference = !state.reference;
@@ -111,7 +69,14 @@ elements.canvas.addEventListener("keydown", (event) => {
 });
 window.addEventListener("resize", () => state.result && setZoom(state.zoom));
 
-updateGalleryProgress();
+const requestedPainting = new URLSearchParams(window.location.search).get("id");
+const initialPainting = Object.hasOwn(PAINTINGS, requestedPainting) ? requestedPainting : Object.keys(PAINTINGS)[0];
+if (requestedPainting !== initialPainting) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("id", initialPainting);
+  window.history.replaceState({}, "", url);
+}
+openPainting(initialPainting);
 
 async function openPainting(id) {
   const painting = PAINTINGS[id];
@@ -126,9 +91,11 @@ async function openPainting(id) {
   state.hint = false;
   state.zoom = 1;
 
-  elements.studio.hidden = false;
   elements.studioArtist.textContent = `${painting.artist} · ${painting.year}`;
   elements.studioTitle.textContent = painting.title;
+  document.title = `${painting.title} — Painted`;
+  const description = document.querySelector('meta[name="description"]');
+  if (description) description.content = `Paint ${painting.title} online with ${COLOUR_COUNT} numbered colours.`;
   elements.loadingState.hidden = false;
   elements.canvasScroll.hidden = true;
   elements.paletteGrid.replaceChildren();
@@ -140,7 +107,6 @@ async function openPainting(id) {
   elements.progressPercent.textContent = "0% complete";
   elements.loadingCopy.textContent = "Studying the colours in the original";
   setStatus("Preparing the numbered canvas…");
-  elements.studio.scrollIntoView({ behavior: "smooth", block: "start" });
 
   try {
     const image = await loadImage(painting.image);
@@ -684,7 +650,6 @@ function updateProgress() {
   elements.progressCount.textContent = `${completed} / ${total} colours`;
   elements.progressFill.style.width = `${percent}%`;
   elements.progressPercent.textContent = `${percent}% complete`;
-  updateGalleryProgress();
 }
 
 function setZoom(value) {
@@ -720,10 +685,6 @@ function resetPainting() {
   setStatus("The canvas has been reset. Colour 1 is ready.");
 }
 
-function progressKey(id) {
-  return `${STORAGE_PREFIX}${id}`;
-}
-
 function loadProgress(id, total) {
   try {
     const stored = JSON.parse(localStorage.getItem(progressKey(id)) || "null");
@@ -744,31 +705,6 @@ function saveProgress() {
   } catch {
     setStatus("Progress could not be saved in this browser, but you can keep painting.", "error");
   }
-}
-
-function updateGalleryProgress() {
-  Object.keys(PAINTINGS).forEach((id) => {
-    const card = document.querySelector(`[data-painting="${id}"]`);
-    if (!card) return;
-    let completed = 0;
-    let total = COLOUR_COUNT;
-    try {
-      const stored = JSON.parse(localStorage.getItem(progressKey(id)) || "null");
-      if (stored && Array.isArray(stored.filled) && Number.isInteger(stored.total)) {
-        completed = new Set(stored.filled).size;
-        total = stored.total;
-      }
-    } catch {
-      // A malformed local value should not stop the gallery from loading.
-    }
-    const percent = total ? Math.round((completed / total) * 100) : 0;
-    const progress = card.querySelector(".card-progress");
-    progress.querySelector("i").style.width = `${percent}%`;
-    progress.querySelector("strong").textContent = completed ? `${percent}% complete` : "Not started";
-    progress.setAttribute("aria-label", completed ? `${percent}% complete` : "No progress yet");
-    const start = card.querySelector(".start-button");
-    start.firstChild.textContent = completed ? "Continue painting " : "Start painting ";
-  });
 }
 
 function instructionForSelection() {
