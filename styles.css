@@ -309,7 +309,7 @@ h1, h2, h3, p { margin-top: 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .canvas-scroll { width: 100%; height: 100%; padding: 38px; overflow: auto; display: flex; align-items: flex-start; justify-content: flex-start; }
-#paint-canvas { max-width: none; flex: 0 0 auto; display: block; margin: auto; background: #fffefa; box-shadow: 0 15px 46px rgba(31, 40, 34, 0.2); cursor: crosshair; transform-origin: top left; transition: width 160ms ease, filter 140ms ease; }
+#paint-canvas { max-width: none; flex: 0 0 auto; display: block; margin: auto; background: #fffefa; box-shadow: 0 15px 46px rgba(31, 40, 34, 0.2); cursor: crosshair; transform-origin: top left; transition: filter 140ms ease; }
 #paint-canvas.is-wrong { animation: nudge 230ms ease; filter: sepia(0.35); }
 @keyframes nudge { 33% { transform: translateX(-4px); } 66% { transform: translateX(4px); } }
 
