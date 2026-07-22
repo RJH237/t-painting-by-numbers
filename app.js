@@ -27,6 +27,11 @@ const elements = {
   paintStatus: $("#paint-status"),
   resetButton: $("#reset-button"),
   nextButton: $("#next-button"),
+  palettePanel: $("#palette-panel"),
+  paletteToggle: $("#palette-toggle"),
+  paletteClose: $("#palette-close"),
+  paletteBackdrop: $("#palette-backdrop"),
+  mobileColourLabel: $("#mobile-colour-label"),
   selectedColour: $("#selected-colour"),
   paletteGrid: $("#palette-grid"),
   progressCount: $("#progress-count"),
@@ -42,6 +47,7 @@ const state = {
   reference: false,
   hint: false,
   zoom: 1,
+  paletteOpen: false,
   loadToken: 0,
 };
 
@@ -49,7 +55,7 @@ elements.referenceButton.addEventListener("click", () => {
   if (!state.result) return;
   state.reference = !state.reference;
   elements.referenceButton.setAttribute("aria-pressed", String(state.reference));
-  elements.referenceButton.textContent = state.reference ? "Return to canvas" : "Show original";
+  syncControlLabels();
   renderCanvas();
   setStatus(state.reference ? "Original shown for reference. Return to the canvas to keep painting." : instructionForSelection());
 });
@@ -64,8 +70,14 @@ elements.hintButton.addEventListener("click", () => {
 
 elements.zoomOut.addEventListener("click", () => setZoom(state.zoom - ZOOM_STEP));
 elements.zoomIn.addEventListener("click", () => setZoom(state.zoom + ZOOM_STEP));
-elements.nextButton.addEventListener("click", () => selectNextUnfinished(state.selected));
+elements.nextButton.addEventListener("click", () => {
+  selectNextUnfinished(state.selected);
+  if (isPhoneLayout()) closePaletteAndFocusCanvas();
+});
 elements.resetButton.addEventListener("click", resetPainting);
+elements.paletteToggle.addEventListener("click", () => setPaletteOpen(!state.paletteOpen));
+elements.paletteClose.addEventListener("click", () => setPaletteOpen(false, true));
+elements.paletteBackdrop.addEventListener("click", () => setPaletteOpen(false, true));
 elements.canvas.addEventListener("click", handleCanvasClick);
 elements.canvas.addEventListener("keydown", (event) => {
   if ((event.key === "Enter" || event.key === " ") && state.result && !state.reference) {
@@ -73,12 +85,21 @@ elements.canvas.addEventListener("keydown", (event) => {
     completeNextRegionForColour(state.selected, true);
   }
 });
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && state.paletteOpen) setPaletteOpen(false, true);
+});
 let resizeFrame = 0;
 window.addEventListener("resize", () => {
   if (!state.result) return;
   cancelAnimationFrame(resizeFrame);
   resizeFrame = requestAnimationFrame(renderCanvas);
 });
+window.addEventListener("painted:layoutchange", () => {
+  setPaletteOpen(false);
+  syncControlLabels();
+  if (state.result) requestAnimationFrame(renderCanvas);
+});
+syncDeviceControls();
 
 const requestedPainting = new URLSearchParams(window.location.search).get("id");
 const initialPainting = Object.hasOwn(PAINTINGS, requestedPainting) ? requestedPainting : Object.keys(PAINTINGS)[0];
@@ -101,6 +122,7 @@ async function openPainting(id) {
   state.reference = false;
   state.hint = false;
   state.zoom = 1;
+  setPaletteOpen(false);
 
   elements.studioArtist.textContent = `${painting.artist} · ${painting.year}`;
   elements.studioTitle.textContent = painting.title;
@@ -111,8 +133,8 @@ async function openPainting(id) {
   elements.canvasScroll.hidden = true;
   elements.paletteGrid.replaceChildren();
   elements.referenceButton.setAttribute("aria-pressed", "false");
-  elements.referenceButton.textContent = "Show original";
   elements.hintButton.setAttribute("aria-pressed", "false");
+  syncControlLabels();
   elements.progressCount.textContent = "0 areas painted";
   elements.progressFill.style.width = "0%";
   elements.progressPercent.textContent = "0% complete";
@@ -539,6 +561,7 @@ function selectColour(index) {
   refreshPalette();
   if (!state.reference) renderCanvas();
   setStatus(isColourComplete(index) ? `Colour ${index + 1} is already complete. Choose an unfinished colour.` : instructionForSelection());
+  if (isPhoneLayout()) closePaletteAndFocusCanvas();
 }
 
 function refreshPalette() {
@@ -552,6 +575,8 @@ function refreshPalette() {
   const colour = state.result.colours[state.selected];
   elements.selectedColour.querySelector("span").style.background = toHex(colour);
   elements.selectedColour.querySelector("strong").textContent = `Colour ${state.selected + 1}`;
+  elements.paletteToggle.style.setProperty("--mobile-swatch", toHex(colour));
+  elements.mobileColourLabel.textContent = `Colour ${state.selected + 1}`;
 }
 
 function handleCanvasClick(event) {
@@ -667,8 +692,9 @@ function setZoom(value) {
 }
 
 function getCanvasBaseWidth() {
-  const availableWidth = Math.max(230, elements.canvasScroll.clientWidth - 76);
-  const availableHeight = Math.max(300, elements.canvasScroll.clientHeight - 76);
+  const canvasGutter = isPhoneLayout() ? 28 : 76;
+  const availableWidth = Math.max(230, elements.canvasScroll.clientWidth - canvasGutter);
+  const availableHeight = Math.max(240, elements.canvasScroll.clientHeight - canvasGutter);
   const ratio = state.result.width / state.result.height;
   return Math.min(availableWidth, availableHeight * ratio, 1500);
 }
@@ -682,8 +708,8 @@ function resetPainting() {
   state.reference = false;
   state.hint = false;
   elements.referenceButton.setAttribute("aria-pressed", "false");
-  elements.referenceButton.textContent = "Show original";
   elements.hintButton.setAttribute("aria-pressed", "false");
+  syncControlLabels();
   saveProgress();
   refreshPalette();
   renderCanvas();
@@ -731,6 +757,53 @@ function setStatus(message, tone = "neutral") {
   elements.paintStatus.textContent = message;
   elements.paintStatus.classList.toggle("is-success", tone === "success");
   elements.paintStatus.classList.toggle("is-error", tone === "error");
+}
+
+function isPhoneLayout() {
+  return document.documentElement.dataset.device === "phone";
+}
+
+function syncDeviceControls() {
+  const phone = isPhoneLayout();
+  elements.palettePanel.inert = phone && !state.paletteOpen;
+  if (phone) {
+    elements.palettePanel.setAttribute("role", "dialog");
+    elements.palettePanel.setAttribute("aria-modal", "true");
+    elements.palettePanel.setAttribute("aria-label", "Numbered colour paintbox");
+  } else {
+    elements.palettePanel.removeAttribute("role");
+    elements.palettePanel.removeAttribute("aria-modal");
+    elements.palettePanel.removeAttribute("aria-label");
+  }
+  syncControlLabels();
+}
+
+function syncControlLabels() {
+  const phone = isPhoneLayout();
+  elements.referenceButton.textContent = state.reference
+    ? (phone ? "Canvas" : "Return to canvas")
+    : (phone ? "Original" : "Show original");
+  elements.hintButton.textContent = phone ? "Hint" : "Highlight number";
+}
+
+function setPaletteOpen(open, restoreFocus = false) {
+  const next = Boolean(open && isPhoneLayout());
+  state.paletteOpen = next;
+  elements.palettePanel.classList.toggle("is-open", next);
+  elements.paletteToggle.setAttribute("aria-expanded", String(next));
+  elements.paletteBackdrop.hidden = !next;
+  syncDeviceControls();
+
+  if (next) {
+    requestAnimationFrame(() => elements.paletteClose.focus());
+  } else if (restoreFocus && isPhoneLayout()) {
+    elements.paletteToggle.focus();
+  }
+}
+
+function closePaletteAndFocusCanvas() {
+  setPaletteOpen(false);
+  requestAnimationFrame(() => elements.canvas.focus({ preventScroll: true }));
 }
 
 function relativeLightness(colour) {

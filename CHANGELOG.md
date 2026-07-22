@@ -2,6 +2,19 @@
 
 All notable changes to Painted are recorded here.
 
+## 0.5.0 — 2026-07-22
+
+### Added
+
+- Automatic phone-versus-desktop layout detection using browser mobile signals and touch-screen capabilities
+- A canvas-first phone workspace sized to the visible screen and updated safely after rotation
+- A mobile paintbox drawer with large swatches, clear open/close controls and keyboard-accessible focus handling
+
+### Improved
+
+- Compact phone navigation, gallery cards, headings, progress display and painting controls
+- Touch target sizes, canvas panning and mobile safe-area support without changing the desktop layout
+
 ## 0.4.1 — 2026-07-22
 
 ### Fixed
