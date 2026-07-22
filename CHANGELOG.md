@@ -2,6 +2,19 @@
 
 All notable changes to Painted are recorded here.
 
+## 0.7.1 — 2026-07-22
+
+### Fixed
+
+- Restore reliable vertical movement of the enlarged painting on phones while retaining horizontal movement
+- Make the mobile canvas independently scrollable in both directions, avoiding iOS flexbox overflow behaviour that could block vertical panning
+- Preserve focal-point pinch zoom and one-finger dragging from any visible part of the painting
+
+### Added
+
+- Permanent regression checks requiring phone users to be able to pinch zoom and pan horizontally, vertically and diagonally
+- A mobile canvas regression stylesheet that explicitly preserves two-axis overflow and touch gesture handling in future versions
+
 ## 0.7.0 — 2026-07-22
 
 ### Changed
