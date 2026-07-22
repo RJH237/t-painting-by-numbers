@@ -275,6 +275,7 @@ h1, h2, h3, p { margin-top: 0; }
 }
 
 .tool-group { display: flex; gap: 8px; }
+.mobile-palette-toggle, .palette-drawer-top, .palette-backdrop { display: none; }
 .tool-group button, .zoom-controls button, #next-button {
   border: 1px solid #d3d5d0;
   background: #fff;
@@ -581,6 +582,284 @@ footer p { margin: 0; color: #aebbb1; font-family: Georgia, serif; font-size: 0.
 @media (max-width: 430px) {
   .site-header .brand > span:last-child { display: none; }
   .site-nav { gap: 12px; }
+}
+
+/* Phone mode is selected by device-layout.js using the browser's mobile flag,
+   mobile user agent, or a phone-sized coarse touchscreen. */
+html[data-device="phone"] { --phone-gutter: 16px; }
+
+html[data-device="phone"] body:not(.paint-page) .site-header,
+html[data-device="phone"] body:not(.paint-page) main {
+  width: calc(100% - (var(--phone-gutter) * 2));
+}
+
+html[data-device="phone"] body:not(.paint-page) .site-header {
+  min-height: 62px;
+  padding-top: env(safe-area-inset-top);
+}
+
+html[data-device="phone"] .brand {
+  gap: 8px;
+  font-size: 1.08rem;
+}
+
+html[data-device="phone"] .brand-mark {
+  width: 25px;
+  height: 24px;
+  transform: scale(.9);
+}
+
+html[data-device="phone"] .site-nav { gap: 15px; }
+html[data-device="phone"] .site-nav a { min-height: 44px; display: grid; place-items: center; font-size: .65rem; }
+
+html[data-device="phone"] .hero {
+  min-height: 0;
+  padding: 42px 0 47px;
+  grid-template-columns: 1fr;
+  gap: 28px;
+}
+
+html[data-device="phone"] .hero h1 { font-size: clamp(3.4rem, 18vw, 5.2rem); }
+html[data-device="phone"] .hero-copy { font-size: 1.08rem; line-height: 1.5; }
+html[data-device="phone"] .gallery-section { padding: 42px 0 62px; }
+html[data-device="phone"] .section-heading { margin-bottom: 24px; }
+html[data-device="phone"] .section-heading h2 { font-size: 2.25rem; }
+html[data-device="phone"] .painting-grid { grid-template-columns: 1fr; gap: 16px; }
+html[data-device="phone"] .painting-card { border-radius: 8px; }
+html[data-device="phone"] .painting-card:hover { transform: none; }
+html[data-device="phone"] .painting-image-wrap { height: clamp(220px, 64vw, 290px); }
+html[data-device="phone"] .painting-card-copy { padding: 18px; }
+html[data-device="phone"] .painting-card-copy h3 { min-height: 0; margin-bottom: 15px; }
+html[data-device="phone"] .start-button { min-height: 48px; padding: 15px 0 0; align-items: center; }
+html[data-device="phone"] .home-callout { margin-bottom: 62px; padding: 38px 25px; }
+html[data-device="phone"] .home-callout h2 { font-size: 2.35rem; }
+
+html[data-device="phone"] .page-hero { padding: 58px 0 52px; }
+html[data-device="phone"] .page-hero h1 { margin-bottom: 24px; font-size: clamp(3.1rem, 15vw, 4.8rem); }
+html[data-device="phone"] .instruction-list li { padding: 28px 0; }
+html[data-device="phone"] .content-cta { padding: 38px 25px; }
+
+html[data-device="phone"] body.paint-page {
+  height: var(--app-height, 100dvh);
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html[data-device="phone"] body.paint-page .site-header {
+  width: 100%;
+  height: calc(54px + env(safe-area-inset-top));
+  min-height: calc(54px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) 14px 0;
+  border-bottom-color: rgba(29, 40, 33, .1);
+}
+
+html[data-device="phone"] body.paint-page .site-header .brand > span:last-child { display: inline; }
+html[data-device="phone"] body.paint-page .site-nav { display: none; }
+html[data-device="phone"] body.paint-page main { width: 100%; height: calc(var(--app-height, 100dvh) - 54px - env(safe-area-inset-top)); }
+
+html[data-device="phone"] .studio-section {
+  height: 100%;
+  padding: 8px 10px max(10px, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+html[data-device="phone"] .studio-heading {
+  min-height: 52px;
+  margin: 0 0 8px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) minmax(92px, 30vw);
+  align-items: center;
+  gap: 9px;
+}
+
+html[data-device="phone"] .back-button {
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--card);
+  font-size: 1rem;
+}
+
+html[data-device="phone"] .back-label,
+html[data-device="phone"] .studio-heading .eyebrow { display: none; }
+html[data-device="phone"] .studio-heading h1 { overflow: hidden; font-size: 1.18rem; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
+html[data-device="phone"] .progress-summary strong { margin-bottom: 5px; overflow: hidden; font-size: .66rem; text-overflow: ellipsis; white-space: nowrap; }
+html[data-device="phone"] .progress-summary small { margin-top: 4px; font-size: .57rem; }
+html[data-device="phone"] .progress-track { height: 4px; }
+
+html[data-device="phone"] .studio-shell {
+  min-height: 0;
+  height: 100%;
+  display: block;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 10px 34px rgba(33, 43, 36, .12);
+}
+
+html[data-device="phone"] .canvas-panel { height: 100%; grid-template-rows: auto minmax(0, 1fr) auto; }
+html[data-device="phone"] .canvas-toolbar {
+  min-height: 54px;
+  padding: 5px 7px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+}
+
+html[data-device="phone"] .tool-group { min-width: 0; gap: 5px; }
+html[data-device="phone"] .tool-group button,
+html[data-device="phone"] .zoom-controls button {
+  min-height: 42px;
+  border-radius: 5px;
+  font-size: .62rem;
+}
+
+html[data-device="phone"] .tool-group button { padding: 7px 8px; white-space: nowrap; }
+html[data-device="phone"] .mobile-palette-toggle { min-width: 67px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+html[data-device="phone"] .mobile-palette-toggle > span { width: 15px; height: 15px; flex: 0 0 15px; border: 1px solid rgba(0,0,0,.15); border-radius: 50%; background: var(--mobile-swatch, #333); }
+html[data-device="phone"] .mobile-palette-toggle strong { max-width: 47px; overflow: hidden; font-size: inherit; text-overflow: ellipsis; white-space: nowrap; }
+html[data-device="phone"] .zoom-controls { gap: 2px; }
+html[data-device="phone"] .zoom-controls button { width: 38px; height: 42px; }
+html[data-device="phone"] .zoom-controls output { width: 43px; font-size: .59rem; }
+
+html[data-device="phone"] .canvas-stage { min-height: 0; }
+html[data-device="phone"] .canvas-scroll {
+  padding: 14px;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+html[data-device="phone"] #paint-canvas { margin: auto; cursor: default; box-shadow: 0 8px 25px rgba(31, 40, 34, .18); }
+html[data-device="phone"] .loading-state { padding: 20px; text-align: center; }
+html[data-device="phone"] .loading-state strong { font-size: 1.05rem; }
+
+html[data-device="phone"] .canvas-footer {
+  min-height: 54px;
+  padding: 8px 10px;
+  gap: 10px;
+  flex-direction: row;
+  align-items: center;
+}
+
+html[data-device="phone"] .canvas-footer p {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: .64rem;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+html[data-device="phone"] .reset-button { min-height: 40px; padding: 5px 0; font-size: .59rem; }
+html[data-device="phone"] body.paint-page > footer { display: none; }
+
+html[data-device="phone"] .palette-backdrop:not([hidden]) {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: block;
+  border: 0;
+  background: rgba(18, 29, 23, .45);
+  backdrop-filter: blur(2px);
+}
+
+html[data-device="phone"] .palette-panel {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 31;
+  max-height: min(72vh, 620px);
+  max-height: min(72dvh, 620px);
+  padding: 7px 16px max(16px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  border: 0;
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -18px 60px rgba(18, 29, 23, .22);
+  transform: translateY(105%);
+  visibility: hidden;
+  transition: transform 220ms ease, visibility 220ms step-end;
+}
+
+html[data-device="phone"] .palette-panel.is-open {
+  transform: translateY(0);
+  visibility: visible;
+  transition: transform 220ms ease, visibility 0s;
+}
+
+html[data-device="phone"] .palette-drawer-top {
+  min-height: 35px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+
+html[data-device="phone"] .palette-drawer-top > span {
+  grid-column: 2;
+  width: 42px;
+  height: 4px;
+  border-radius: 5px;
+  background: #d2d3ce;
+}
+
+html[data-device="phone"] .palette-close {
+  grid-column: 3;
+  justify-self: end;
+  min-width: 50px;
+  min-height: 35px;
+  border: 0;
+  background: transparent;
+  color: var(--forest);
+  font-size: .68rem;
+  font-weight: 800;
+}
+
+html[data-device="phone"] .palette-heading { align-items: center; }
+html[data-device="phone"] .palette-heading .eyebrow { display: none; }
+html[data-device="phone"] .palette-heading h2 { font-size: 1.35rem; }
+html[data-device="phone"] #next-button { min-height: 40px; padding: 7px 10px; }
+html[data-device="phone"] .palette-help { margin: 6px 0 9px; }
+html[data-device="phone"] .selected-colour { margin-bottom: 9px; padding: 7px 9px; }
+html[data-device="phone"] .selected-colour > span { width: 32px; height: 32px; flex-basis: 32px; }
+html[data-device="phone"] .palette-grid {
+  min-height: 0;
+  max-height: none;
+  padding: 4px 5px 12px 3px;
+  grid-template-columns: repeat(auto-fit, minmax(42px, 1fr));
+  gap: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+html[data-device="phone"] .palette-swatch { min-height: 42px; font-size: .68rem; }
+
+@media (max-width: 370px) {
+  html[data-device="phone"] .canvas-toolbar { grid-template-columns: 1fr; }
+  html[data-device="phone"] .tool-group { justify-content: space-between; }
+  html[data-device="phone"] .tool-group button { flex: 1; }
+  html[data-device="phone"] .zoom-controls { justify-content: center; }
+  html[data-device="phone"] .canvas-footer { min-height: 48px; }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  html[data-device="phone"] body.paint-page .site-header {
+    height: calc(48px + env(safe-area-inset-top));
+    min-height: calc(48px + env(safe-area-inset-top));
+  }
+  html[data-device="phone"] body.paint-page main { height: calc(var(--app-height, 100dvh) - 48px - env(safe-area-inset-top)); }
+  html[data-device="phone"] .studio-heading { min-height: 42px; }
+  html[data-device="phone"] .studio-section { padding-top: 5px; }
+  html[data-device="phone"] .canvas-footer { min-height: 46px; }
+  html[data-device="phone"] .palette-panel { max-height: 88dvh; }
 }
 
 @media (prefers-reduced-motion: reduce) {
