@@ -2,6 +2,21 @@
 
 All notable changes to Painted are recorded here.
 
+## 0.4.0 — 2026-07-22
+
+### Changed
+
+- Painting links now open their individual artwork page in a new browser tab
+- Increased the canvas zoom range from 55–175% to 50–500%
+- Made number labels zoom-aware so small labels stay hidden until they become readable
+- Changed painting completion from whole-colour filling to one connected area per click
+- Changed painting progress to count completed connected areas; colour ticks now appear only after every matching area is complete
+
+### Added
+
+- Automatic migration of browser progress saved by earlier colour-level releases
+- Connected-region tests covering separate same-colour areas and legacy progress migration
+
 ## 0.3.0 — 2026-07-22
 
 ### Changed

@@ -39,8 +39,10 @@ for (const [id, painting] of Object.entries(PAINTINGS)) {
   const link = document.createElement("a");
   link.className = "start-button";
   link.href = `paint.html?id=${encodeURIComponent(id)}`;
+  link.target = "_blank";
+  link.rel = "noopener";
   link.innerHTML = `${completed ? "Continue" : "Start"} painting <span aria-hidden="true">→</span>`;
-  link.setAttribute("aria-label", `${completed ? "Continue" : "Start"} painting ${painting.title}`);
+  link.setAttribute("aria-label", `${completed ? "Continue" : "Start"} painting ${painting.title} in a new tab`);
 
   copy.append(byline, title, progress, link);
   article.append(imageWrap, copy);
@@ -52,7 +54,10 @@ function readProgress(id) {
   let total = COLOUR_COUNT;
   try {
     const stored = JSON.parse(localStorage.getItem(progressKey(id)) || "null");
-    if (stored && Array.isArray(stored.filled) && Number.isInteger(stored.total)) {
+    if (stored?.version === 2 && Array.isArray(stored.filledRegions) && Number.isInteger(stored.totalRegions)) {
+      completed = new Set(stored.filledRegions).size;
+      total = stored.totalRegions;
+    } else if (stored && Array.isArray(stored.filled) && Number.isInteger(stored.total)) {
       completed = new Set(stored.filled).size;
       total = stored.total;
     }
