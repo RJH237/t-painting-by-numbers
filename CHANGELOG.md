@@ -2,6 +2,19 @@
 
 All notable changes to Painted are recorded here.
 
+## 0.7.0 — 2026-07-22
+
+### Changed
+
+- Turn the phone painting page into an edge-to-edge, viewport-filling workspace
+- Replace the bottom-sheet paintbox with an always-visible vertical colour wheel on the right
+- Reduce phone chrome and canvas padding so the painting receives substantially more screen space
+
+### Improved
+
+- Keep all 120 numbered colours reachable with smooth independent vertical scrolling
+- Retain pinch zoom, one-finger panning, sharp adaptive labels and safe-area support in the new layout
+
 ## 0.6.1 — 2026-07-22
 
 ### Fixed
