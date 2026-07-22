@@ -3,6 +3,14 @@
 import { COLOUR_COUNT, DETAIL_EDGE, PAINTINGS, progressKey } from "./paintings.js";
 import { expandLegacyColours, findRegions } from "./regions.js";
 import { calculateBackingStore, calculateLabelFontSize, findLabelPlacement } from "./canvas-rendering.js";
+import {
+  canvasAnchorFromPoint,
+  clampZoom,
+  distanceBetween,
+  midpointBetween,
+  scrollDeltaForAnchor,
+  wheelZoomTarget,
+} from "./canvas-gestures.js";
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 5;
@@ -51,6 +59,17 @@ const state = {
   loadToken: 0,
 };
 
+const gesture = {
+  pointers: new Map(),
+  panStart: null,
+  pinchStart: null,
+  pendingZoom: null,
+  zoomFrame: 0,
+  suppressClickUntil: 0,
+  wheelZoom: null,
+  wheelFrame: 0,
+};
+
 elements.referenceButton.addEventListener("click", () => {
   if (!state.result) return;
   state.reference = !state.reference;
@@ -79,6 +98,11 @@ elements.paletteToggle.addEventListener("click", () => setPaletteOpen(!state.pal
 elements.paletteClose.addEventListener("click", () => setPaletteOpen(false, true));
 elements.paletteBackdrop.addEventListener("click", () => setPaletteOpen(false, true));
 elements.canvas.addEventListener("click", handleCanvasClick);
+elements.canvas.addEventListener("wheel", handleCanvasWheel, { passive: false });
+elements.canvasScroll.addEventListener("pointerdown", handleCanvasPointerDown);
+elements.canvasScroll.addEventListener("pointermove", handleCanvasPointerMove);
+elements.canvasScroll.addEventListener("pointerup", handleCanvasPointerEnd);
+elements.canvasScroll.addEventListener("pointercancel", handleCanvasPointerEnd);
 elements.canvas.addEventListener("keydown", (event) => {
   if ((event.key === "Enter" || event.key === " ") && state.result && !state.reference) {
     event.preventDefault();
@@ -580,6 +604,7 @@ function refreshPalette() {
 }
 
 function handleCanvasClick(event) {
+  if (performance.now() < gesture.suppressClickUntil) return;
   if (!state.result || state.reference) return;
   const rectangle = elements.canvas.getBoundingClientRect();
   const x = Math.min(state.result.width - 1, Math.max(0, Math.floor(((event.clientX - rectangle.left) / rectangle.width) * state.result.width)));
@@ -681,14 +706,167 @@ function updateProgress() {
   elements.progressPercent.textContent = `${percent}% complete`;
 }
 
-function setZoom(value) {
-  state.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.round(value / ZOOM_STEP) * ZOOM_STEP));
+function setZoom(value, { snap = true, anchor = null, point = null } = {}) {
+  const nextValue = snap ? Math.round(value / ZOOM_STEP) * ZOOM_STEP : value;
+  const nextZoom = clampZoom(nextValue, MIN_ZOOM, MAX_ZOOM);
+  const zoomChanged = Math.abs(nextZoom - state.zoom) > 0.001;
+  state.zoom = nextZoom;
   elements.zoomOutput.value = `${Math.round(state.zoom * 100)}%`;
-  if (state.result && !elements.canvasScroll.hidden) {
+  if (zoomChanged && state.result && !elements.canvasScroll.hidden) {
     renderCanvas();
+  }
+  if (anchor && point && state.result && !elements.canvasScroll.hidden) {
+    positionCanvasAnchor(anchor, point);
   }
   elements.zoomOut.disabled = state.zoom <= MIN_ZOOM;
   elements.zoomIn.disabled = state.zoom >= MAX_ZOOM;
+}
+
+function captureCanvasAnchor(point) {
+  return canvasAnchorFromPoint(elements.canvas.getBoundingClientRect(), point);
+}
+
+function positionCanvasAnchor(anchor, point) {
+  const delta = scrollDeltaForAnchor(elements.canvas.getBoundingClientRect(), anchor, point);
+  elements.canvasScroll.scrollLeft += delta.x;
+  elements.canvasScroll.scrollTop += delta.y;
+}
+
+function handleCanvasWheel(event) {
+  if (isPhoneLayout() || !state.result) return;
+  event.preventDefault();
+  const point = { x: event.clientX, y: event.clientY };
+  const currentZoom = gesture.wheelZoom ?? state.zoom;
+  gesture.wheelZoom = clampZoom(
+    wheelZoomTarget(currentZoom, event.deltaY, event.deltaMode),
+    MIN_ZOOM,
+    MAX_ZOOM,
+  );
+  gesture.pendingZoom = {
+    value: gesture.wheelZoom,
+    anchor: captureCanvasAnchor(point),
+    point,
+  };
+  if (gesture.wheelFrame) return;
+  gesture.wheelFrame = requestAnimationFrame(() => {
+    gesture.wheelFrame = 0;
+    const pending = gesture.pendingZoom;
+    gesture.pendingZoom = null;
+    gesture.wheelZoom = null;
+    if (pending) setZoom(pending.value, { snap: false, anchor: pending.anchor, point: pending.point });
+  });
+}
+
+function handleCanvasPointerDown(event) {
+  if (!isPhoneLayout() || event.pointerType !== "touch" || !state.result) return;
+  const captureTarget = event.target instanceof Element ? event.target : elements.canvasScroll;
+  captureTarget.setPointerCapture?.(event.pointerId);
+  gesture.pointers.set(event.pointerId, {
+    x: event.clientX,
+    y: event.clientY,
+    captureTarget,
+  });
+
+  if (gesture.pointers.size === 1) {
+    gesture.panStart = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      scrollLeft: elements.canvasScroll.scrollLeft,
+      scrollTop: elements.canvasScroll.scrollTop,
+    };
+    gesture.pinchStart = null;
+    return;
+  }
+
+  if (gesture.pointers.size === 2) {
+    beginPinchGesture();
+    gesture.suppressClickUntil = performance.now() + 400;
+    event.preventDefault();
+  }
+}
+
+function handleCanvasPointerMove(event) {
+  const activePointer = gesture.pointers.get(event.pointerId);
+  if (!activePointer) return;
+  gesture.pointers.set(event.pointerId, {
+    x: event.clientX,
+    y: event.clientY,
+    captureTarget: activePointer.captureTarget,
+  });
+
+  if (gesture.pointers.size >= 2) {
+    if (!gesture.pinchStart) beginPinchGesture();
+    const [first, second] = [...gesture.pointers.values()];
+    const distance = distanceBetween(first, second);
+    if (!gesture.pinchStart || !distance) return;
+    const point = midpointBetween(first, second);
+    queueGestureZoom(
+      gesture.pinchStart.zoom * (distance / gesture.pinchStart.distance),
+      gesture.pinchStart.anchor,
+      point,
+    );
+    gesture.suppressClickUntil = performance.now() + 400;
+    event.preventDefault();
+    return;
+  }
+
+  if (!gesture.panStart || gesture.panStart.pointerId !== event.pointerId) return;
+  const deltaX = event.clientX - gesture.panStart.x;
+  const deltaY = event.clientY - gesture.panStart.y;
+  if (Math.hypot(deltaX, deltaY) > 4) {
+    gesture.suppressClickUntil = performance.now() + 400;
+  }
+  elements.canvasScroll.scrollLeft = gesture.panStart.scrollLeft - deltaX;
+  elements.canvasScroll.scrollTop = gesture.panStart.scrollTop - deltaY;
+  event.preventDefault();
+}
+
+function handleCanvasPointerEnd(event) {
+  if (!gesture.pointers.has(event.pointerId)) return;
+  gesture.pointers.delete(event.pointerId);
+  gesture.pinchStart = null;
+
+  const [remaining] = gesture.pointers.entries();
+  if (remaining) {
+    const [pointerId, point] = remaining;
+    gesture.panStart = {
+      pointerId,
+      x: point.x,
+      y: point.y,
+      scrollLeft: elements.canvasScroll.scrollLeft,
+      scrollTop: elements.canvasScroll.scrollTop,
+    };
+  } else {
+    gesture.panStart = null;
+  }
+}
+
+function beginPinchGesture() {
+  const [first, second] = [...gesture.pointers.values()];
+  if (!first || !second) return;
+  const point = midpointBetween(first, second);
+  gesture.pinchStart = {
+    distance: Math.max(1, distanceBetween(first, second)),
+    zoom: state.zoom,
+    anchor: captureCanvasAnchor(point),
+  };
+  gesture.panStart = null;
+}
+
+function queueGestureZoom(value, anchor, point) {
+  gesture.pendingZoom = {
+    value: clampZoom(value, MIN_ZOOM, MAX_ZOOM),
+    anchor,
+    point,
+  };
+  if (gesture.zoomFrame) return;
+  gesture.zoomFrame = requestAnimationFrame(() => {
+    gesture.zoomFrame = 0;
+    const pending = gesture.pendingZoom;
+    gesture.pendingZoom = null;
+    if (pending) setZoom(pending.value, { snap: false, anchor: pending.anchor, point: pending.point });
+  });
 }
 
 function getCanvasBaseWidth() {
