@@ -2,6 +2,19 @@
 
 All notable changes to Painted are recorded here.
 
+## 0.6.0 — 2026-07-22
+
+### Added
+
+- Mouse-wheel and trackpad zoom directly over the painting on desktop
+- Two-finger pinch zoom and one-finger panning in the phone painting workspace
+- Focal-point preservation so the location under the pointer or pinch midpoint stays in view while zooming
+
+### Improved
+
+- Continuous gesture zoom within the existing 50–500% range while retaining the toolbar controls
+- Touch gesture handling that prevents a pan or pinch from accidentally painting an area
+
 ## 0.5.0 — 2026-07-22
 
 ### Added
