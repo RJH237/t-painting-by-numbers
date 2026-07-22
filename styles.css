@@ -732,11 +732,11 @@ html[data-device="phone"] .canvas-stage { min-height: 0; }
 html[data-device="phone"] .canvas-scroll {
   padding: 14px;
   overscroll-behavior: contain;
-  touch-action: pan-x pan-y;
-  -webkit-overflow-scrolling: touch;
+  touch-action: none;
+  user-select: none;
 }
 
-html[data-device="phone"] #paint-canvas { margin: auto; cursor: default; box-shadow: 0 8px 25px rgba(31, 40, 34, .18); }
+html[data-device="phone"] #paint-canvas { margin: auto; cursor: default; touch-action: none; box-shadow: 0 8px 25px rgba(31, 40, 34, .18); }
 html[data-device="phone"] .loading-state { padding: 20px; text-align: center; }
 html[data-device="phone"] .loading-state strong { font-size: 1.05rem; }
 
