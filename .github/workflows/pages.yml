@@ -1,3 +1,4 @@
+# Static-site deployment for https://rjh237.github.io/t-painting-by-numbers/
 name: Deploy to GitHub Pages
 
 on:
