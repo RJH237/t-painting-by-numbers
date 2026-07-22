@@ -2,6 +2,12 @@
 
 All notable changes to Painted are recorded here.
 
+## 0.2.1 — 2026-07-22
+
+### Improved
+
+- Smoothed isolated colour cells into clearer, more natural numbered paint regions while retaining all 120 palette colours
+
 ## 0.2.0 — 2026-07-22
 
 ### Changed

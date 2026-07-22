@@ -150,7 +150,9 @@ async function openPainting(id) {
     await nextFrame();
     const prepared = prepareImage(image, DETAIL_EDGE);
     const quantised = quantise(prepared.pixels, COLOUR_COUNT);
+    quantised.labels = smoothLabels(quantised.labels, prepared.width, prepared.height, 2);
     ensureEveryColourIsUsed(quantised, prepared.pixels);
+    recalculateColours(quantised, prepared.pixels);
 
     elements.loadingCopy.textContent = "Drawing the numbered regions";
     await nextFrame();
@@ -348,6 +350,52 @@ function colourDistance(red, green, blue, colour) {
   const dg = green - colour[1];
   const db = blue - colour[2];
   return (2 + redMean / 256) * dr * dr + 4 * dg * dg + (2 + (255 - redMean) / 256) * db * db;
+}
+
+function smoothLabels(input, width, height, passes) {
+  let labels = input.slice();
+  for (let pass = 0; pass < passes; pass += 1) {
+    const next = labels.slice();
+    for (let y = 1; y < height - 1; y += 1) {
+      for (let x = 1; x < width - 1; x += 1) {
+        const index = y * width + x;
+        const counts = new Uint8Array(COLOUR_COUNT);
+        for (let dy = -1; dy <= 1; dy += 1) {
+          for (let dx = -1; dx <= 1; dx += 1) {
+            if (dx || dy) counts[labels[(y + dy) * width + x + dx]] += 1;
+          }
+        }
+        let winner = labels[index];
+        let winningCount = counts[winner];
+        for (let colour = 0; colour < counts.length; colour += 1) {
+          if (counts[colour] > winningCount) {
+            winner = colour;
+            winningCount = counts[colour];
+          }
+        }
+        if (winningCount >= 5) next[index] = winner;
+      }
+    }
+    labels = next;
+  }
+  return labels;
+}
+
+function recalculateColours(result, pixels) {
+  const sums = Array.from({ length: result.colours.length }, () => [0, 0, 0, 0]);
+  for (let pixel = 0; pixel < result.labels.length; pixel += 1) {
+    const label = result.labels[pixel];
+    const offset = pixel * 3;
+    sums[label][0] += pixels[offset];
+    sums[label][1] += pixels[offset + 1];
+    sums[label][2] += pixels[offset + 2];
+    sums[label][3] += 1;
+  }
+  result.colours = sums.map((sum, index) => sum[3] ? [
+    Math.round(sum[0] / sum[3]),
+    Math.round(sum[1] / sum[3]),
+    Math.round(sum[2] / sum[3]),
+  ] : result.colours[index]);
 }
 
 function sortPalette(colours, labels) {
