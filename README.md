@@ -6,11 +6,12 @@ Painted is a browser-based painting-by-numbers gallery. Choose a classic public-
 
 - Four classic paintings: *The Starry Night*, *The Great Wave*, *Girl with a Pearl Earring*, and *Mona Lisa*
 - Separate Gallery, painting, How to play, and About pages with shareable painting URLs
+- Gallery actions open each painting in a new browser tab
 - A deterministic 120-colour palette for every painting
-- Interactive numbered canvas with correct-colour matching
+- Interactive numbered canvas that fills only the connected area clicked
 - Optional original reference view and numbered-area hint
-- Per-painting progress saved in browser local storage
-- Responsive layout, canvas zoom, and keyboard completion fallback
+- Per-area painting progress saved in browser local storage
+- Responsive layout, zoom up to 500%, and zoom-aware number labels
 - No accounts, uploads, printing, or image downloads
 
 ## Run locally
@@ -26,9 +27,19 @@ Then visit <http://localhost:8000>. Individual canvases use URLs such as
 
 ## How it works
 
-When a painting page opens, its source reproduction is resized to a 156-pixel shape grid and reduced to 120 representative colours using deterministic colour clustering. The canvas renders numbered boundaries over unfinished colours. Selecting a numbered swatch and clicking the same number fills every area belonging to that colour.
+When a painting page opens, its source reproduction is resized to a 156-pixel shape grid and reduced to 120 representative colours using deterministic colour clustering. The canvas identifies each group of horizontally or vertically connected cells as a distinct paint area. Selecting a numbered swatch and clicking the same number fills only that connected area.
 
-Only the list of completed colour numbers is stored, using `localStorage` in the user's browser. Nothing is uploaded to a server.
+Numbers that would be illegibly small are hidden at the fitted view and appear automatically as zoom makes their areas large enough. Zoom ranges from 50% to 500%.
+
+Only the list of completed connected areas is stored, using `localStorage` in the user's browser. Existing colour-level progress from earlier releases is migrated automatically. Nothing is uploaded to a server.
+
+## Tests
+
+Run the JavaScript syntax checks and connected-region tests with:
+
+```bash
+node --check app.js && node --check gallery.js && node --test tests/regions.test.mjs
+```
 
 ## Artwork sources
 
