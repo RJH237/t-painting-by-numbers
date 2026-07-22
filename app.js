@@ -97,7 +97,7 @@ elements.zoomOut.addEventListener("click", () => setZoom(state.zoom - ZOOM_STEP)
 elements.zoomIn.addEventListener("click", () => setZoom(state.zoom + ZOOM_STEP));
 elements.nextButton.addEventListener("click", () => {
   selectNextUnfinished(state.selected);
-  if (isPhoneLayout()) closePaletteAndFocusCanvas();
+  if (usesPaletteDrawer()) closePaletteAndFocusCanvas();
 });
 elements.resetButton.addEventListener("click", resetPainting);
 elements.paletteToggle.addEventListener("click", () => setPaletteOpen(!state.paletteOpen));
@@ -591,7 +591,7 @@ function selectColour(index) {
   refreshPalette();
   if (!state.reference) renderCanvas();
   setStatus(isColourComplete(index) ? `Colour ${index + 1} is already complete. Choose an unfinished colour.` : instructionForSelection());
-  if (isPhoneLayout()) closePaletteAndFocusCanvas();
+  if (usesPaletteDrawer()) closePaletteAndFocusCanvas();
 }
 
 function refreshPalette() {
@@ -955,18 +955,15 @@ function isPhoneLayout() {
   return document.documentElement.dataset.device === "phone";
 }
 
+function usesPaletteDrawer() {
+  return false;
+}
+
 function syncDeviceControls() {
-  const phone = isPhoneLayout();
-  elements.palettePanel.inert = phone && !state.paletteOpen;
-  if (phone) {
-    elements.palettePanel.setAttribute("role", "dialog");
-    elements.palettePanel.setAttribute("aria-modal", "true");
-    elements.palettePanel.setAttribute("aria-label", "Numbered colour paintbox");
-  } else {
-    elements.palettePanel.removeAttribute("role");
-    elements.palettePanel.removeAttribute("aria-modal");
-    elements.palettePanel.removeAttribute("aria-label");
-  }
+  elements.palettePanel.inert = false;
+  elements.palettePanel.removeAttribute("role");
+  elements.palettePanel.removeAttribute("aria-modal");
+  elements.palettePanel.removeAttribute("aria-label");
   syncControlLabels();
 }
 
@@ -979,7 +976,7 @@ function syncControlLabels() {
 }
 
 function setPaletteOpen(open, restoreFocus = false) {
-  const next = Boolean(open && isPhoneLayout());
+  const next = Boolean(open && usesPaletteDrawer());
   state.paletteOpen = next;
   elements.palettePanel.classList.toggle("is-open", next);
   elements.paletteToggle.setAttribute("aria-expanded", String(next));
