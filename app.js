@@ -2,11 +2,11 @@
 
 import { COLOUR_COUNT, DETAIL_EDGE, PAINTINGS, progressKey } from "./paintings.js";
 import { expandLegacyColours, findRegions } from "./regions.js";
+import { calculateBackingStore, calculateLabelFontSize, findLabelPlacement } from "./canvas-rendering.js";
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 5;
 const ZOOM_STEP = 0.25;
-const MIN_VISIBLE_LABEL_SIZE = 7.5;
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -73,10 +73,11 @@ elements.canvas.addEventListener("keydown", (event) => {
     completeNextRegionForColour(state.selected, true);
   }
 });
+let resizeFrame = 0;
 window.addEventListener("resize", () => {
   if (!state.result) return;
-  applyCanvasZoom();
-  if (!state.reference) renderCanvas();
+  cancelAnimationFrame(resizeFrame);
+  resizeFrame = requestAnimationFrame(renderCanvas);
 });
 
 const requestedPainting = new URLSearchParams(window.location.search).get("id");
@@ -134,6 +135,14 @@ async function openPainting(id) {
     await nextFrame();
     const sorted = sortPalette(quantised.colours, quantised.labels);
     const regionMap = findRegions(sorted.labels, prepared.width, prepared.height, sorted.colours.length);
+    for (const region of regionMap.regions) {
+      region.labelPlacement = findLabelPlacement(
+        region,
+        regionMap.regionByPixel,
+        prepared.width,
+        prepared.height,
+      );
+    }
 
     state.result = {
       width: prepared.width,
@@ -398,13 +407,17 @@ function sortPalette(colours, labels) {
 function renderCanvas() {
   if (!state.result) return;
   const { width, height, labels, colours, originalPixels, regions, regionByPixel } = state.result;
-  const longEdge = 1500;
-  const scale = longEdge / Math.max(width, height);
   const canvas = elements.canvas;
-  canvas.width = Math.round(width * scale);
-  canvas.height = Math.round(height * scale);
+  const displayWidth = Math.max(180, getCanvasBaseWidth() * state.zoom);
+  const displayHeight = displayWidth * (height / width);
+  const backing = calculateBackingStore(displayWidth, displayHeight, window.devicePixelRatio);
+  canvas.style.width = `${displayWidth}px`;
+  canvas.style.height = `${displayHeight}px`;
+  if (canvas.width !== backing.width) canvas.width = backing.width;
+  if (canvas.height !== backing.height) canvas.height = backing.height;
   const context = canvas.getContext("2d");
-  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.setTransform(backing.scaleX, 0, 0, backing.scaleY, 0, 0);
+  context.clearRect(0, 0, displayWidth, displayHeight);
 
   const miniature = document.createElement("canvas");
   miniature.width = width;
@@ -433,16 +446,16 @@ function renderCanvas() {
 
   miniatureContext.putImageData(image, 0, 0);
   context.imageSmoothingEnabled = false;
-  context.drawImage(miniature, 0, 0, canvas.width, canvas.height);
+  context.drawImage(miniature, 0, 0, displayWidth, displayHeight);
 
   if (!state.reference) {
-    drawBoundaries(context, labels, width, height, scale);
-    drawNumbers(context, regions, scale);
+    const cellScale = displayWidth / width;
+    drawBoundaries(context, labels, width, height, cellScale);
+    drawNumbers(context, regions, cellScale);
   }
   context.strokeStyle = "rgba(29,40,33,.72)";
-  context.lineWidth = Math.max(2, scale * 0.15);
-  context.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
-  applyCanvasZoom();
+  context.lineWidth = Math.max(1.5, (displayWidth / width) * 0.15);
+  context.strokeRect(1, 1, displayWidth - 2, displayHeight - 2);
 }
 
 function drawBoundaries(context, labels, width, height, scale) {
@@ -468,7 +481,6 @@ function drawBoundaries(context, labels, width, height, scale) {
 }
 
 function drawNumbers(context, regions, scale) {
-  const displayScale = (getCanvasBaseWidth() * state.zoom) / elements.canvas.width;
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.lineJoin = "round";
@@ -476,20 +488,23 @@ function drawNumbers(context, regions, scale) {
   for (const region of regions) {
     if (state.filled.has(region.id)) continue;
     const number = String(region.label + 1);
-    const regionWidth = (region.maxX - region.minX + 1) * scale;
-    const regionHeight = (region.maxY - region.minY + 1) * scale;
-    const idealSize = Math.max(7, Math.min(22, Math.sqrt(region.cells.length) * scale * 0.32));
-    const horizontalFit = regionWidth / (number.length * 0.64);
-    const verticalFit = regionHeight * 0.74;
-    const fontSize = Math.max(1, Math.min(idealSize, horizontalFit, verticalFit));
-    if (fontSize * displayScale < MIN_VISIBLE_LABEL_SIZE) continue;
-    const x = (region.anchorX + 0.5) * scale;
-    const y = (region.anchorY + 0.5) * scale;
+    const placement = region.labelPlacement;
+    let fontSize = calculateLabelFontSize(region, placement, scale);
+    if (!fontSize) continue;
+    const x = (placement.x + 0.5) * scale;
+    const y = (placement.y + 0.5) * scale;
     context.font = `700 ${fontSize}px ui-sans-serif, system-ui, sans-serif`;
+    const availableWidth = placement.widthCells * scale * 0.9;
+    const measuredWidth = context.measureText(number).width;
+    if (measuredWidth > availableWidth) {
+      fontSize *= availableWidth / measuredWidth;
+      if (fontSize < 9) continue;
+      context.font = `700 ${fontSize}px ui-sans-serif, system-ui, sans-serif`;
+    }
     context.strokeStyle = "rgba(255,254,249,.96)";
-    context.lineWidth = Math.max(1.2, fontSize * 0.3);
+    context.lineWidth = Math.max(1, fontSize * 0.16);
     context.strokeText(number, x, y);
-    context.fillStyle = region.label === state.selected ? "#a54f36" : "rgba(42,49,44,.82)";
+    context.fillStyle = region.label === state.selected ? "#9b422b" : "rgba(35,43,37,.92)";
     context.fillText(number, x, y);
   }
 }
@@ -654,14 +669,8 @@ function setZoom(value) {
 function getCanvasBaseWidth() {
   const availableWidth = Math.max(230, elements.canvasScroll.clientWidth - 76);
   const availableHeight = Math.max(300, elements.canvasScroll.clientHeight - 76);
-  const ratio = elements.canvas.width / elements.canvas.height;
-  return Math.min(availableWidth, availableHeight * ratio, elements.canvas.width);
-}
-
-function applyCanvasZoom() {
-  if (!state.result || elements.canvasScroll.hidden) return;
-  elements.canvas.style.width = `${Math.max(180, getCanvasBaseWidth() * state.zoom)}px`;
-  elements.canvas.style.height = "auto";
+  const ratio = state.result.width / state.result.height;
+  return Math.min(availableWidth, availableHeight * ratio, 1500);
 }
 
 function resetPainting() {
