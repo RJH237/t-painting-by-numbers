@@ -64,3 +64,27 @@ export function calculateLabelFontSize(region, placement, cellScale) {
   const fontSize = Math.min(MAX_VISIBLE_LABEL_SIZE, areaSize, horizontalFit, verticalFit);
   return fontSize >= MIN_VISIBLE_LABEL_SIZE ? fontSize : 0;
 }
+
+export function calculateRequiredZoomForLabels(regions, baseCellScale, minimumFontSize = MIN_VISIBLE_LABEL_SIZE) {
+  if (!regions.length || !(baseCellScale > 0)) return 1;
+
+  let requiredCellScale = 0;
+  for (const region of regions) {
+    const placement = region.labelPlacement;
+    const numberLength = String(region.label + 1).length;
+    const areaRequirement = (minimumFontSize * 2) / Math.sqrt(region.cells.length);
+    // The extra width allowance covers differences between the approximation and
+    // the browser's measured bold system font, including three-digit labels.
+    const horizontalRequirement = (minimumFontSize * numberLength * 0.62 * 1.4)
+      / (placement.widthCells * 0.9);
+    const verticalRequirement = minimumFontSize / (placement.heightCells * 0.74);
+    requiredCellScale = Math.max(
+      requiredCellScale,
+      areaRequirement,
+      horizontalRequirement,
+      verticalRequirement,
+    );
+  }
+
+  return requiredCellScale / baseCellScale;
+}
