@@ -2,6 +2,17 @@
 
 All notable changes to Painted are recorded here.
 
+## 0.6.1 — 2026-07-22
+
+### Fixed
+
+- Calculate a painting-specific maximum zoom so every connected region can display its number on phones and desktops
+- Keep the generated pixel grid unchanged while allowing zoom beyond the former 500% cap when needed
+
+### Added
+
+- A permanent regression test requiring every region label, including one-cell three-digit labels, to be visible at maximum zoom
+
 ## 0.6.0 — 2026-07-22
 
 ### Added
