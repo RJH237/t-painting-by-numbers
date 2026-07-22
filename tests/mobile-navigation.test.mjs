@@ -2,11 +2,16 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [app, paintPage, mobileNavigationCss] = await Promise.all([
+const [app, paintPage, mobileNavigationCss, version] = await Promise.all([
   readFile(new URL("../app.js", import.meta.url), "utf8"),
   readFile(new URL("../paint.html", import.meta.url), "utf8"),
   readFile(new URL("../mobile-canvas-navigation.css", import.meta.url), "utf8"),
+  readFile(new URL("../VERSION", import.meta.url), "utf8"),
 ]);
+
+test("release is labelled 0.8.0", () => {
+  assert.equal(version.trim(), "0.8.0");
+});
 
 test("phone detection remains an ES module so custom touch gestures are installed", () => {
   assert.match(paintPage, /<script type="module" src="device-layout\.js"><\/script>/);
