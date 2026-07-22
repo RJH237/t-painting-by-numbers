@@ -1,0 +1,21 @@
+/* Painted 0.8.0 — phone canvas navigation.
+   Keep the scroll viewport as a normal block formatting context so an enlarged
+   canvas contributes its full width and height to both scroll axes. The canvas
+   rendering and label sizing remain controlled by app.js at every zoom level. */
+html[data-device="phone"] .canvas-scroll:not([hidden]) {
+  min-width: 0;
+  min-height: 0;
+  display: block;
+  overflow-x: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: none;
+  user-select: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+html[data-device="phone"] #paint-canvas {
+  display: block;
+  margin: 0 auto;
+  touch-action: none;
+}
