@@ -2,6 +2,14 @@
 
 All notable changes to Painted are recorded here.
 
+## 0.4.1 — 2026-07-22
+
+### Fixed
+
+- Redraw the canvas at each zoom level and the screen's pixel density so numbers and boundaries remain sharp at high zoom
+- Fit each number to usable space around its actual anchor, preventing small three-digit labels from overlapping nearby regions
+- Allow the smallest region labels to appear once zoom makes them genuinely readable
+
 ## 0.4.0 — 2026-07-22
 
 ### Changed
