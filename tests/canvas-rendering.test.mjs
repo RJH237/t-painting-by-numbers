@@ -31,6 +31,16 @@ test("small labels stay hidden until zoom gives a cell readable space", () => {
   assert.ok(calculateLabelFontSize(region, placement, 30) >= 9);
 });
 
+test("visible number labels grow when the canvas zoom increases", () => {
+  const region = { label: 8, cells: Array.from({ length: 16 }, (_, index) => index) };
+  const placement = { widthCells: 4, heightCells: 4 };
+  const normalSize = calculateLabelFontSize(region, placement, 5);
+  const zoomedSize = calculateLabelFontSize(region, placement, 10);
+
+  assert.ok(normalSize >= 9);
+  assert.ok(zoomedSize > normalSize);
+});
+
 test("label placement favours the best centred clearance inside an irregular region", () => {
   const regionByPixel = new Uint16Array([
     1, 0, 0, 0, 1,
